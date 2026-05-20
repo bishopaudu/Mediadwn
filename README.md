@@ -1,10 +1,10 @@
-
-markdown
 # mediadwn
 
 **A clean, fast web interface for downloading online media locally.**
 
-Paste any video URL, pick MP4 (video) or MP3 (audio), choose a quality, and download the processed file straight to your machine. Everything runs on your own computer – no accounts, no cloud, no limits.
+Paste any video URL, pick MP4 (video) or MP3 (audio), choose a quality, and download the processed file straight to your machine.
+
+Everything runs on your own computer — no accounts, no cloud, no limits.
 
 <p align="center">
   <img src="screenshot.png" width="600" alt="mediadwn home screen"/>
@@ -12,126 +12,251 @@ Paste any video URL, pick MP4 (video) or MP3 (audio), choose a quality, and down
 
 ---
 
-## ✨ Features
+# ✨ Features
 
-- **URL analysis** – fetch title, thumbnail, or playlist entries instantly  
-- **Format selection** – MP4 (video) or MP3 (audio)  
-- **Quality options** – 360p, 720p, 1080p for video  
-- **Real-time progress** – live updates while the file is processed  
-- **Direct download** – get the finished file with one click  
-- **Mobile‑responsive** – works perfectly on phones, tablets, and desktops  
-- **Local only** – all data stays on your computer, no internet connection needed for processing  
-
----
-
-## 🧰 Tech Stack
-
-| Layer         | Technology                            |
-|---------------|---------------------------------------|
-| Frontend      | React 18, Vite, Tailwind CSS 4       |
-| Backend       | Rust (Axum), Tokio, Serde             |
-| Media engine  | yt-dlp (extraction), ffmpeg (conversion) |
-| File storage  | Local filesystem (`/tmp/offline-vault/`) |
+- URL analysis — fetch title, thumbnail, or playlist entries instantly
+- Format selection — MP4 (video) or MP3 (audio)
+- Quality options — 360p, 720p, 1080p for video
+- Real-time progress updates
+- Direct file downloads
+- Mobile responsive UI
+- Local-only processing
+- Playlist support
+- Fast Rust backend powered by Axum + Tokio
 
 ---
 
-## 📦 Prerequisites
+# 🧰 Tech Stack
 
-Before running mediadwn, make sure these are installed on your system:
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, Vite, Tailwind CSS 4 |
+| Backend | Rust, Axum, Tokio, Serde |
+| Media Engine | yt-dlp, ffmpeg |
+| Storage | Local filesystem |
 
-- **Rust** (1.70+) – [rustup.rs](https://rustup.rs)
-- **Node.js** (v18+) and npm – [nodejs.org](https://nodejs.org)
-- **yt-dlp**  
-  ```bash
-  pip install yt-dlp
-or download a binary from yt-dlp GitHub
+---
 
-ffmpeg
+# 📦 Prerequisites
 
-Ubuntu/Debian: sudo apt install ffmpeg
+Before running `mediadwn`, install the following:
 
-macOS: brew install ffmpeg
+## Rust
 
-Windows: ffmpeg.org/download.html
+Install Rust from:
 
-Verify that both yt-dlp and ffmpeg are available in your terminal:
+- https://rustup.rs
 
-bash
+Verify:
+
+```bash
+rustc --version
+cargo --version
+```
+
+---
+
+## Node.js
+
+Install Node.js v18+ from:
+
+- https://nodejs.org
+
+Verify:
+
+```bash
+node --version
+npm --version
+```
+
+---
+
+## yt-dlp
+
+Install with pip:
+
+```bash
+pip install yt-dlp
+```
+
+Or download binaries from:
+
+- https://github.com/yt-dlp/yt-dlp
+
+Verify:
+
+```bash
 yt-dlp --version
+```
+
+---
+
+## ffmpeg
+
+### macOS
+
+```bash
+brew install ffmpeg
+```
+
+### Ubuntu / Debian
+
+```bash
+sudo apt install ffmpeg
+```
+
+### Windows
+
+Download from:
+
+- https://ffmpeg.org/download.html
+
+Verify:
+
+```bash
 ffmpeg -version
-🚀 Quick Start
-1. Clone the repository
-bash
+```
+
+---
+
+# 🚀 Quick Start
+
+## 1. Clone the Repository
+
+```bash
 git clone https://github.com/yourusername/mediadwn.git
 cd mediadwn
-2. Start the backend
-bash
+```
+
+---
+
+## 2. Start the Backend
+
+```bash
 cd backend
 cargo run
-The API server will start on http://localhost:4000. Keep this terminal open.
+```
 
-3. Start the frontend
-Open a second terminal and run:
+Backend runs on:
 
-bash
+```txt
+http://localhost:4000
+```
+
+Keep this terminal running.
+
+---
+
+## 3. Start the Frontend
+
+Open another terminal:
+
+```bash
 cd frontend-vite
 npm install
 npm run dev
-The frontend is now live at http://localhost:5173.
+```
 
-🧭 How to Use
-Open http://localhost:5173 in your browser.
+Frontend runs on:
 
-Paste a video or playlist URL (YouTube, Vimeo, etc.) and click Analyze.
+```txt
+http://localhost:5173
+```
 
-On the preview screen:
+---
 
-Confirm the title/thumbnail
+# 🧭 How to Use
 
-Choose MP4 (video) or MP3 (audio)
+1. Open:
 
-For MP4, select a resolution (360p, 720p, or 1080p)
+```txt
+http://localhost:5173
+```
 
-Click Download.
+2. Paste a video or playlist URL
 
-Watch the progress bar fill up. When complete, a download link appears – click it to save the file.
+3. Click **Analyze**
 
-📡 Backend API
-The backend exposes these endpoints on http://localhost:4000:
+4. Choose:
+   - MP4 or MP3
+   - Video quality (360p / 720p / 1080p)
 
-Method	Endpoint	Description
-POST	/analyze	Analyze a URL. Returns video info or playlist array.
-POST	/download	Start a download/conversion job.
-GET	/status/:job_id	Get status (pending, processing, done, failed) and progress (0-100).
-GET	/file/:job_id	Download the finished file.
-Example /analyze request:
+5. Click **Download**
 
-json
+6. Wait for processing
+
+7. Download the finished file
+
+---
+
+# 📡 Backend API
+
+Base URL:
+
+```txt
+http://localhost:4000
+```
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/analyze` | Analyze video or playlist |
+| POST | `/download` | Start download job |
+| GET | `/status/:job_id` | Get job progress |
+| GET | `/file/:job_id` | Download finished file |
+
+---
+
+## Example Analyze Request
+
+```json
 POST /analyze
-{ "url": "https://www.youtube.com/watch?v=..." }
-Example response (single video):
 
-json
+{
+  "url": "https://www.youtube.com/watch?v=..."
+}
+```
+
+---
+
+## Example Single Video Response
+
+```json
 {
   "title": "My Video Title",
   "thumbnail": "https://...",
   "is_playlist": false
 }
-Example response (playlist):
+```
 
-json
+---
+
+## Example Playlist Response
+
+```json
 [
-  { "title": "First video", "url": "https://..." },
-  { "title": "Second video", "url": "https://..." }
+  {
+    "title": "First Video",
+    "url": "https://..."
+  },
+  {
+    "title": "Second Video",
+    "url": "https://..."
+  }
 ]
-🧩 Project Structure
-text
+```
+
+---
+
+# 🧩 Project Structure
+
+```txt
 mediadwn/
-├── backend/                 # Rust API server
+├── backend/
 │   ├── Cargo.toml
 │   └── src/
 │       └── main.rs
-├── frontend-vite/           # React + Vite app
+│
+├── frontend-vite/
 │   ├── public/
 │   ├── src/
 │   │   ├── pages/
@@ -144,55 +269,137 @@ mediadwn/
 │   ├── index.html
 │   ├── vite.config.js
 │   └── package.json
+│
 └── README.md
-🔧 Configuration
-Output directory: Files are saved to /tmp/offline-vault/. To change this, edit the output_dir() function in backend/src/main.rs.
+```
 
-Frontend API URL: All fetch calls in the React components point to http://localhost:4000. If you change the backend port, update those URLs accordingly.
+---
 
-🐛 Troubleshooting
-“yt-dlp not found” – Make sure yt-dlp is installed and in your PATH. Restart your terminal after installing.
+# 🔧 Configuration
 
-“ffmpeg not found” – Same as above; ensure ffmpeg is installed and accessible.
+## Output Directory
 
-Frontend fails to start – Delete node_modules and run npm install again.
+Downloaded files are stored in:
 
-Backend fails to compile – Ensure you have the latest stable Rust toolchain: rustup update stable.
+```txt
+/tmp/offline-vault/
+```
 
-Files not downloading – Check that the backend has write permission to /tmp/offline-vault/. The directory is created automatically.
+To change this, edit:
 
-🛡️ Important Notes
-mediadwn is a personal tool for downloading media you have the right to access. Respect copyright laws in your country.
+```rust
+fn output_dir() -> PathBuf
+```
 
-There is no authentication – run it on a trusted local network only.
+inside:
 
-All temporary files are stored in /tmp/offline-vault/, which is usually cleared on reboot. Clean up manually if needed.
+```txt
+backend/src/main.rs
+```
 
-🔮 Roadmap
-Real-time progress via WebSockets
+---
 
-Persistent job history (SQLite)
+## Frontend API URL
 
-Full playlist batch download
+Frontend requests currently point to:
 
-Custom file‑naming templates
+```txt
+http://localhost:4000
+```
 
-Docker support
+If you change the backend port, update the frontend fetch URLs.
 
-Desktop app wrapper (Tauri)
+---
 
-Contributions and ideas are welcome!
+# 🐛 Troubleshooting
 
-📄 License
-MIT © 2026 Your Name
+## yt-dlp not found
 
-🙏 Acknowledgements
-yt-dlp – outstanding media extractor
+Ensure yt-dlp is installed and available in PATH.
 
-ffmpeg – universal media converter
+Restart your terminal after installation.
 
-Axum – elegant Rust web framework
+---
 
-Vite and Tailwind CSS – fast, beautiful frontend tooling
+## ffmpeg not found
 
-<p align="center"> Built with ❤️ for offline media lovers. </p> ```
+Install ffmpeg and verify:
+
+```bash
+ffmpeg -version
+```
+
+---
+
+## Frontend fails to start
+
+Delete dependencies and reinstall:
+
+```bash
+rm -rf node_modules
+npm install
+```
+
+---
+
+## Backend fails to compile
+
+Update Rust:
+
+```bash
+rustup update stable
+```
+
+---
+
+## Files are not downloading
+
+Ensure backend can write to:
+
+```txt
+/tmp/offline-vault/
+```
+
+---
+
+# 🛡️ Important Notes
+
+- `mediadwn` is intended for personal/offline use
+- Respect copyright laws in your country
+- No authentication is included
+- Run only on trusted networks
+- Temporary files are stored locally
+
+---
+
+# 🔮 Roadmap
+
+- Real-time WebSocket progress
+- SQLite job history
+- Full playlist batch downloads
+- Docker support
+- Tauri desktop app
+- Custom filename templates
+
+---
+
+# 📄 License
+
+MIT © 2026
+
+---
+
+# 🙏 Acknowledgements
+
+- yt-dlp
+- ffmpeg
+- Axum
+- Tokio
+- Vite
+- Tailwind CSS
+
+---
+
+<p align="center">
+Built with ❤️ for offline media lovers.
+</p>
