@@ -101,7 +101,7 @@ fn sanitize_filename(s: &str) -> String {
 
 // ---------- Route handlers ----------
 
-async fn analyze(
+/*async fn analyze(
     Json(payload): Json<AnalyzeRequest>,
 ) -> Result<Json<AnalyzeResponse>, (StatusCode, String)> {
     let url = payload.url.trim().to_string();
@@ -146,6 +146,71 @@ async fn analyze(
             .as_str()
             .unwrap_or("")
             .to_string();
+        Ok(Json(AnalyzeResponse::Single {
+            title,
+            thumbnail,
+            is_playlist: false,
+        }))
+    }
+}*/
+async fn analyze(
+    Json(payload): Json<AnalyzeRequest>,
+) -> Result<Json<AnalyzeResponse>, (StatusCode, String)> {
+    let url = payload.url.trim().to_string();
+    if url.is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "URL is required".into()));
+    }
+
+    let output = tokio::process::Command::new("yt-dlp")
+        .args(["-J", "--flat-playlist", &url])
+        .output()
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err((StatusCode::BAD_REQUEST, format!("yt-dlp error: {}", stderr)));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let trimmed = stdout.trim();
+
+    // Parse the JSON output
+    let json: serde_json::Value = serde_json::from_str(trimmed)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Check if it's a playlist (either an array or an object with "entries")
+    if let Some(entries) = json.get("entries") {
+        // Object with "entries" -> playlist
+        let playlist: Vec<PlaylistEntry> = entries
+            .as_array()
+            .ok_or_else(|| (StatusCode::INTERNAL_SERVER_ERROR, "Invalid playlist format".into()))?
+            .iter()
+            .filter_map(|v| {
+                let title = v.get("title")?.as_str()?.to_string();
+                let url = v.get("url").or_else(|| v.get("webpage_url"))?.as_str()?.to_string();
+                Some(PlaylistEntry { title, url })
+            })
+            .collect();
+
+        Ok(Json(AnalyzeResponse::Playlist(playlist)))
+    } else if json.is_array() {
+        // Top-level array -> playlist (rare but supported)
+        let entries: Vec<serde_json::Value> = serde_json::from_str(trimmed)
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        let playlist: Vec<PlaylistEntry> = entries
+            .into_iter()
+            .filter_map(|v| {
+                let title = v.get("title")?.as_str()?.to_string();
+                let url = v.get("url").or_else(|| v.get("webpage_url"))?.as_str()?.to_string();
+                Some(PlaylistEntry { title, url })
+            })
+            .collect();
+        Ok(Json(AnalyzeResponse::Playlist(playlist)))
+    } else {
+        // Single video
+        let title = json["title"].as_str().unwrap_or("Unknown").to_string();
+        let thumbnail = json["thumbnail"].as_str().unwrap_or("").to_string();
         Ok(Json(AnalyzeResponse::Single {
             title,
             thumbnail,

@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Preview from './pages/Preview';
 import Progress from './pages/Progress';
+import BatchProgress from './pages/BatchProgress';
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/preview" element={<Preview />} />
         <Route path="/progress" element={<Progress />} />
+         <Route path="/batch-progress" element={<BatchProgress />} /> 
       </Routes>
     </div>
   );

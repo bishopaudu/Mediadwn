@@ -1,1 +1,28 @@
 @import "tailwindcss";
+
+/* Smooth page transitions */
+body {
+  @apply bg-gray-950 text-white antialiased;
+}
+
+/* Custom animation delay for background blobs */
+@keyframes pulse-delayed {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.1; }
+}
+
+.animate-pulse-delayed {
+  animation: pulse-delayed 6s ease-in-out infinite;
+}
+
+/* Better scrollbar globally */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.4);
+  border-radius: 3px;
+}
