@@ -90,6 +90,13 @@ export default function Home() {
             )}
           </button>
         </div>
+        // inside Home.jsx, after the input card maybe
+<button
+  onClick={() => navigate('/library')}
+  className="text-sm text-indigo-400 hover:underline mt-4"
+>
+  View Library
+</button>
 
         {/* Feature highlights */}
         <div className="grid grid-cols-3 gap-4 text-center text-sm text-gray-500">

@@ -9,12 +9,14 @@ import {
   CheckSquare,
   Square,
 } from 'lucide-react';
+import { getUserId } from '../helper/userID';
+
 
 export default function Preview() {
   const location = useLocation();
   const navigate = useNavigate();
   const { data, url } = location.state || {};
-
+const userId = getUserId();
   const [info, setInfo] = useState(null);
   const [playlist, setPlaylist] = useState(null);
   const [selectedUrls, setSelectedUrls] = useState(new Set());
@@ -62,7 +64,7 @@ export default function Preview() {
     try {
       const res = await fetch('http://localhost:4000/download', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
         body: JSON.stringify({
           url: url || selectedUrls.values().next().value,
           format,
@@ -98,7 +100,7 @@ export default function Preview() {
       for (const url of urls) {
         const res = await fetch('http://localhost:4000/download', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },
           body: JSON.stringify({
             url,
             format,

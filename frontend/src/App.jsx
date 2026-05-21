@@ -3,6 +3,7 @@ import Home from './pages/Home';
 import Preview from './pages/Preview';
 import Progress from './pages/Progress';
 import BatchProgress from './pages/BatchProgress';
+import Library from './pages/Library';
 
 function App() {
   return (
@@ -12,6 +13,8 @@ function App() {
         <Route path="/preview" element={<Preview />} />
         <Route path="/progress" element={<Progress />} />
          <Route path="/batch-progress" element={<BatchProgress />} /> 
+         <Route path="/library" element={<Library />} />
+
       </Routes>
     </div>
   );
