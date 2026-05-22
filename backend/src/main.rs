@@ -171,6 +171,8 @@ fn extract_user_id(headers: &HeaderMap) -> Result<String, StatusCode> {
 async fn analyze(
     Json(payload): Json<AnalyzeRequest>,
 ) -> Result<Json<AnalyzeResponse>, (StatusCode, String)> {
+        eprintln!("Analyzing URL: {}", payload.url.trim());
+
     // unchanged – see previous version
     let url = payload.url.trim().to_string();
     if url.is_empty() {
@@ -188,7 +190,8 @@ async fn analyze(
     }*/
     if !output.status.success() {
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-    
+        eprintln!("yt-dlp stderr: {}", stderr);
+
     let user_message = if stderr.contains("No module named expat") {
         "Instagram and Facebook downloads are currently unavailable due to a known issue. Please try YouTube, Twitter, TikTok, or other supported sites.".to_string()
     } else if stderr.contains("This video is not available") {
