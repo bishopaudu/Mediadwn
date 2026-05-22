@@ -12,7 +12,8 @@ import {
   Gauge,
   FileText,
 } from 'lucide-react';
-import { getUserId } from '../helper/userID';   // make sure file name matches
+import { getUserId } from '../helper/userID';   
+import API_BASE from '../config';
 
 export default function Preview() {
   const location = useLocation();
@@ -72,7 +73,7 @@ const [subLangs, setSubLangs] = useState('auto');
     setError('');
     const userId = getUserId();
     try {
-      const res = await fetch('http://localhost:4000/download', {
+      const res = await fetch(`${API_BASE}/download`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,7 +121,7 @@ const [subLangs, setSubLangs] = useState('auto');
       const jobIds = [];
       for (const url of urls) {
         const entry = playlist.find((e) => e.url === url);
-        const res = await fetch('http://localhost:4000/download', {
+        const res = await fetch(`${API_BASE}/download`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
