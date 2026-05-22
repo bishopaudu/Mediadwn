@@ -47,7 +47,7 @@ export default function Progress() {
     setShareLoading(true);
     try {
       const userId = getUserId();
-      const res = await fetch('http://localhost:4000/share', {
+      const res = await fetch(`${API_BASE}/share`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,7 +142,7 @@ export default function Progress() {
             <div className="space-y-4">
 
               {/* Download button */}
-               <a href={`http://localhost:4000/file/${job_id}`}
+               <a href={`${API_BASE}/file/${job_id}`}
                 className="w-full inline-flex items-center justify-center gap-2 py-4 px-8 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-xl font-bold text-white shadow-lg shadow-green-600/15 dark:shadow-green-600/25 transition-all cursor-pointer"
                 download
               >

@@ -48,7 +48,7 @@ export default function Library() {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`http://localhost:4000/history/${id}`, {
+      await fetch(`${API_BASE}/history/${id}`, {
         method: 'DELETE',
         headers: { 'X-User-ID': userId },
       });
@@ -108,7 +108,7 @@ export default function Library() {
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
                   <a
-                    href={`http://localhost:4000/download-again/${entry.id}?user_id=${userId}`}
+                    href={`${API_BASE}/download-again/${entry.id}?user_id=${userId}`}
                     download
                     className="p-2 rounded-lg bg-green-100 hover:bg-green-200 dark:bg-green-600/20 dark:hover:bg-green-600/30 transition-colors cursor-pointer"
                     title="Download again"

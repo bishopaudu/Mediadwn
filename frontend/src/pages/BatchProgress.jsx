@@ -143,7 +143,7 @@ export default function BatchProgress() {
                 </div>
                 {job.status === 'done' && (
                   <a
-                    href={`http://localhost:4000/file/${job.id}`}
+                    href={`${API_BASE}/file/${job.id}`}
                     download
                     className="flex-shrink-0 p-2 rounded-lg bg-green-100 hover:bg-green-200 dark:bg-green-600/20 dark:hover:bg-green-600/30 transition-colors cursor-pointer"
                   >
