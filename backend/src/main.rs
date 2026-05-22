@@ -581,9 +581,11 @@ async fn job_status(
     State(state): State<Arc<AppState>>,
     Path(job_id): Path<String>,
 ) -> Result<Json<StatusResponse>, StatusCode> {
+     eprintln!("Checking status for job: {}", job_id);  
     // First check memory
     {
         let map = state.jobs.read().await;
+                eprintln!("Jobs in memory: {}", map.len());  // ← ADD THIS
         if let Some(job) = map.get(&job_id) {
             return Ok(Json(StatusResponse {
                 status: format!("{:?}", job.status).to_lowercase(),
@@ -592,6 +594,8 @@ async fn job_status(
             }));
         }
     }
+        eprintln!("Job not in memory, checking DB...");  // ← ADD THIS
+
 
     // Fallback to DB if not in memory (survives server restarts)
     let row: Option<(String, i32, Option<String>)> = sqlx::query_as(
@@ -601,6 +605,8 @@ async fn job_status(
     .fetch_optional(&state.db)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    eprintln!("DB result: {:?}", row.is_some());  // ← ADD THIS
+
 
     match row {
         Some((status, progress, error)) => Ok(Json(StatusResponse {
