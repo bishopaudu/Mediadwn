@@ -78,11 +78,21 @@ struct PlaylistEntry {
     url: String,
 }
 
+/*#[derive(Deserialize)]
+struct DownloadRequest {
+    url: String,
+    format: String,
+    quality: Option<String>,
+}*/
 #[derive(Deserialize)]
 struct DownloadRequest {
     url: String,
     format: String,
     quality: Option<String>,
+    custom_filename: Option<String>,
+    speed_limit: Option<String>,
+    start_time: Option<String>,
+    end_time: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -149,10 +159,35 @@ async fn analyze(
         .output()
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    if !output.status.success() {
+   /*  if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err((StatusCode::BAD_REQUEST, format!("yt-dlp error: {}", stderr)));
-    }
+    }*/
+    if !output.status.success() {
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    
+    let user_message = if stderr.contains("No module named expat") {
+        "Instagram and Facebook downloads are currently unavailable due to a known issue. Please try YouTube, Twitter, TikTok, or other supported sites.".to_string()
+    } else if stderr.contains("This video is not available") {
+        "This video is not available or has been removed.".to_string()
+    } else if stderr.contains("Private video") {
+        "This video is private and cannot be downloaded.".to_string()
+    } else if stderr.contains("Sign in to confirm your age") {
+        "This video requires age verification and cannot be downloaded.".to_string()
+    } else if stderr.contains("Premieres in") {
+        "This video has not premiered yet. Please try again later.".to_string()
+    } else if stderr.contains("This live event will begin in") 
+        || stderr.contains("is not currently available") {
+        "This live stream has not started yet.".to_string()
+    } else if stderr.contains("Unable to extract") 
+        || stderr.contains("Unsupported URL") {
+        "This URL is not supported. Please try a different video link.".to_string()
+    } else {
+        "Failed to analyze this URL. Please check the link and try again.".to_string()
+    };
+    
+    return Err((StatusCode::BAD_REQUEST, user_message));
+}
     let stdout = String::from_utf8_lossy(&output.stdout);
     let trimmed = stdout.trim();
     let json: serde_json::Value = serde_json::from_str(trimmed)
@@ -232,20 +267,267 @@ async fn download(
     let db = state.db.clone();
     let jid = job_id.clone();
 
+    let custom_filename = payload.custom_filename.clone();
+    let speed_limit = payload.speed_limit.clone();
+    let start_time = payload.start_time.clone();
+    let end_time = payload.end_time.clone();
+
     tokio::spawn(async move {
-        // Processing...
-        let mut map = jobs.write().await;
-        if let Some(j) = map.get_mut(&jid) {
-            j.status = JobStatus::Processing;
-            j.progress = 10;
+        // Update to Processing
+        {
+            let mut map = jobs.write().await;
+            if let Some(j) = map.get_mut(&jid) {
+                j.status = JobStatus::Processing;
+                j.progress = 10;
+            }
         }
-        drop(map);
 
-        let output_path = output_dir().join(&jid);
-        let output_template = output_path.to_string_lossy().to_string() + ".%(ext)s";
+        // Determine output template
+        let filename_prefix = if let Some(ref custom) = custom_filename {
+            sanitize_filename(custom)
+        } else {
+            jid.clone()
+        };
+        let output_template = output_dir()
+            .join(format!("{}.%(ext)s", filename_prefix))
+            .to_string_lossy()
+            .to_string();
 
+        // Build yt-dlp command
         let mut cmd = tokio::process::Command::new("yt-dlp");
         cmd.arg("-o").arg(&output_template).arg(&url);
+        cmd.arg("--no-simulate");
+        cmd.arg("--print").arg("after_move:filepath");
+
+        match format.as_str() {
+            "mp3" => {
+                cmd.args(["--extract-audio", "--audio-format", "mp3", "--audio-quality", "0"]);
+            }
+            "mp4" => {
+                let height: u32 = match quality.as_str() {
+                    "360p" => 360,
+                    "720p" => 720,
+                    "1080p" => 1080,
+                    _ => 720,
+                };
+                cmd.args([
+                    "-f",
+                    &format!("bestvideo[height<={0}]+bestaudio/best[height<={0}]", height),
+                    "--merge-output-format",
+                    "mp4",
+                ]);
+            }
+            _ => unreachable!(),
+        }
+
+        // Speed limit
+        if let Some(ref limit) = speed_limit {
+            if limit != "unlimited" {
+                cmd.args(["--limit-rate", limit]);
+            }
+        }
+
+        let result = cmd.output().await;
+        let mut map = jobs.write().await;
+        let j = match map.get_mut(&jid) {
+            Some(j) => j,
+            None => return,
+        };
+
+        match result {
+            Ok(output) if output.status.success() => {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+
+                // Try the path yt-dlp printed via --print after_move:filepath
+                let printed_path = stdout
+                    .lines()
+                    .find(|l| !l.trim().is_empty())
+                    .map(|l| PathBuf::from(l.trim()));
+
+                let mut final_file: Option<PathBuf> = None;
+
+                if let Some(ref p) = printed_path {
+                    if p.exists() {
+                        final_file = Some(p.clone());
+                    }
+                }
+
+                // Fallback: scan output dir for a real media file with our prefix
+                if final_file.is_none() {
+                    if let Ok(mut entries) = tokio::fs::read_dir(output_dir()).await {
+                        while let Ok(Some(entry)) = entries.next_entry().await {
+                            let fname = entry.file_name().to_string_lossy().into_owned();
+                            if fname.starts_with(&filename_prefix) {
+                                let path = entry.path();
+                                if let Some(ext) = path.extension() {
+                                    let ext = ext.to_string_lossy().to_lowercase();
+                                    if ["mp4", "mp3", "webm", "mkv", "m4a", "ogg"]
+                                        .contains(&ext.as_str())
+                                    {
+                                        final_file = Some(path);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if let Some(file_path) = final_file {
+                    // Trimming with ffmpeg
+                    let need_trim = start_time.is_some() || end_time.is_some();
+
+                    if need_trim {
+                        let ext = file_path
+                            .extension()
+                            .map(|e| format!(".{}", e.to_string_lossy()))
+                            .unwrap_or_default();
+                        let trimmed = output_dir()
+                            .join(format!("{}_trimmed{}", filename_prefix, ext));
+
+                        let mut ffmpeg = tokio::process::Command::new("ffmpeg");
+                        ffmpeg.arg("-i").arg(&file_path);
+                        if let Some(ref start) = start_time {
+                            ffmpeg.args(["-ss", start]);
+                        }
+                        if let Some(ref end) = end_time {
+                            ffmpeg.args(["-to", end]);
+                        }
+                        ffmpeg.arg("-c").arg("copy").arg(&trimmed);
+
+                        match ffmpeg.output().await {
+                            Ok(ffout) if ffout.status.success() => {
+                                let _ = tokio::fs::remove_file(&file_path).await;
+                                let _ = tokio::fs::rename(&trimmed, &file_path).await;
+                            }
+                            Ok(_) => {
+                                j.error =
+                                    Some("Trimming failed, keeping original file".into());
+                            }
+                            Err(e) => {
+                                j.error = Some(format!("Trimming error: {}", e));
+                            }
+                        }
+                    }
+
+                    j.status = JobStatus::Done;
+                    j.progress = 100;
+                    j.filename = Some(file_path.to_string_lossy().into_owned());
+
+                    // Save to PostgreSQL
+                    let history_id = Uuid::new_v4();
+                    let _ = sqlx::query(
+                        "INSERT INTO downloads (id, job_id, user_id, url, title, format, quality, file_path, thumbnail)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+                    )
+                    .bind(history_id)
+                    .bind(&j.id)
+                    .bind(&user_id)
+                    .bind(j.url.as_deref().unwrap_or(""))
+                    .bind(j.title.as_deref().unwrap_or("Unknown"))
+                    .bind(j.format.as_deref().unwrap_or(&format))
+                    .bind(j.quality.as_deref())
+                    .bind(j.filename.as_deref())
+                    .bind(j.thumbnail.as_deref())
+                    .execute(&db)
+                    .await;
+                } else {
+                    j.status = JobStatus::Failed;
+                    j.error = Some("Output file not found after download".into());
+                }
+            }
+            Ok(output) => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                let error_msg = if stderr.contains("No module named expat") 
+        || stderr.contains("CURRENTLY BROKEN") 
+    {
+        "Instagram downloads are currently not supported. Try YouTube, Vimeo, TikTok or other supported sites.".to_string()
+    } else {
+        format!("yt-dlp failed: {}", stderr)
+    };
+                j.status = JobStatus::Failed;
+                j.error = Some(error_msg);
+            }
+            Err(e) => {
+                j.status = JobStatus::Failed;
+                j.error = Some(e.to_string());
+            }
+        }
+    });
+
+    Ok(Json(DownloadResponse { job_id }))
+}
+/*async fn download(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(payload): Json<DownloadRequest>,
+) -> Result<Json<DownloadResponse>, (StatusCode, String)> {
+    let user_id = extract_user_id(&headers).map_err(|_| {
+        (StatusCode::UNAUTHORIZED, "Missing X-User-ID header".to_string())
+    })?;
+
+    let url = payload.url.trim().to_string();
+    let format = payload.format.to_lowercase();
+    if url.is_empty() || !["mp4", "mp3"].contains(&format.as_str()) {
+        return Err((StatusCode::BAD_REQUEST, "Invalid URL or format".into()));
+    }
+
+    let quality = match format.as_str() {
+        "mp4" => payload.quality.clone().unwrap_or_else(|| "720p".into()),
+        _ => String::new(),
+    };
+
+    let job_id = Uuid::new_v4().to_string();
+    let job = Job {
+        id: job_id.clone(),
+        status: JobStatus::Pending,
+        progress: 0,
+        filename: None,
+        error: None,
+        title: None,
+        url: Some(url.clone()),
+        format: Some(format.clone()),
+        quality: Some(quality.clone()),
+        thumbnail: None,
+    };
+
+    state.jobs.write().await.insert(job_id.clone(), job);
+
+    let jobs = state.jobs.clone();
+    let db = state.db.clone();
+    let jid = job_id.clone();
+
+    // Clone payload fields for the spawned task
+    let custom_filename = payload.custom_filename.clone();
+    let speed_limit = payload.speed_limit.clone();
+    let start_time = payload.start_time.clone();
+    let end_time = payload.end_time.clone();
+
+    tokio::spawn(async move {
+        // Update to Processing
+        {
+            let mut map = jobs.write().await;
+            if let Some(j) = map.get_mut(&jid) {
+                j.status = JobStatus::Processing;
+                j.progress = 10;
+            }
+        }
+
+        // Determine output template
+        let filename_prefix = if let Some(ref custom) = custom_filename {
+            sanitize_filename(custom)
+        } else {
+            jid.clone()
+        };
+        let output_template = output_dir()
+            .join(format!("{}.%(ext)s", filename_prefix))
+            .to_string_lossy()
+            .to_string();
+
+        // Build yt-dlp command
+        let mut cmd = tokio::process::Command::new("yt-dlp");
+        cmd.arg("-o").arg(&output_template).arg(&url);
+
         match format.as_str() {
             "mp3" => {
                 cmd.args(["--extract-audio", "--audio-format", "mp3", "--audio-quality", "0"]);
@@ -259,7 +541,14 @@ async fn download(
                 };
                 cmd.args(["-f", &format!("bestvideo[height<={0}]+bestaudio/best[height<={0}]", height)]);
             }
-            _ => {}
+            _ => unreachable!(),
+        }
+
+        // Speed limit
+        if let Some(ref limit) = speed_limit {
+            if limit != "unlimited" {
+                cmd.args(["--limit-rate", limit]);
+            }
         }
 
         let result = cmd.output().await;
@@ -273,15 +562,19 @@ async fn download(
             Ok(output) if output.status.success() => {
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 let mut final_file: Option<PathBuf> = None;
+
+                // Look for file starting with our filename_prefix
                 if let Ok(mut entries) = tokio::fs::read_dir(output_dir()).await {
                     while let Ok(Some(entry)) = entries.next_entry().await {
                         let fname = entry.file_name().to_string_lossy().into_owned();
-                        if fname.starts_with(&jid) {
+                        if fname.starts_with(&filename_prefix) {
                             final_file = Some(entry.path());
                             break;
                         }
                     }
                 }
+
+                // Fallback: parse stdout
                 if final_file.is_none() {
                     for line in stdout.lines() {
                         if line.contains("Destination:") {
@@ -296,6 +589,41 @@ async fn download(
                 }
 
                 if let Some(file_path) = final_file {
+                    // ---------- Trimming with ffmpeg ----------
+                   // let mut trimmed_path = None;
+                    let need_trim = start_time.is_some() || end_time.is_some();
+
+                    if need_trim {
+                        // Build trimmed output path
+                        let ext = file_path.extension().map(|e| format!(".{}", e.to_string_lossy())).unwrap_or_default();
+                        let trimmed = output_dir().join(format!("{}_trimmed{}", filename_prefix, ext));
+                        let mut ffmpeg = tokio::process::Command::new("ffmpeg");
+                        ffmpeg.arg("-i").arg(&file_path);
+                        if let Some(ref start) = start_time {
+                            ffmpeg.args(["-ss", start]);
+                        }
+                        if let Some(ref end) = end_time {
+                            ffmpeg.args(["-to", end]);
+                        }
+                        ffmpeg.arg("-c").arg("copy").arg(&trimmed);
+
+                        match ffmpeg.output().await {
+                            Ok(ffout) if ffout.status.success() => {
+                                // Replace original with trimmed
+                                let _ = tokio::fs::remove_file(&file_path).await;
+                                let _ = tokio::fs::rename(&trimmed, &file_path).await;
+                                // file_path remains the same; trimmed_path not needed
+                            }
+                            Ok(_) => {
+                                j.error = Some("Trimming failed, keeping original file".into());
+                            }
+                            Err(e) => {
+                                j.error = Some(format!("Trimming error: {}", e));
+                            }
+                        }
+                    }
+
+                    // Update job
                     j.status = JobStatus::Done;
                     j.progress = 100;
                     j.filename = Some(file_path.to_string_lossy().into_owned());
@@ -335,7 +663,9 @@ async fn download(
     });
 
     Ok(Json(DownloadResponse { job_id }))
-}
+}*/
+
+
 
 async fn job_status(
     State(state): State<Arc<AppState>>,
@@ -372,6 +702,50 @@ async fn download_file(
                     .await
                     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
                 let mime = mime_guess::from_path(&path).first_or_octet_stream();
+
+                // Use the actual filename from disk, NOT j.title
+                let actual_filename = path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_else(|| "download".to_string());
+
+                let disposition = format!(
+                    "attachment; filename=\"{}\"",
+                    actual_filename  // ← has the real name + extension e.g. "abc-123.mp4"
+                );
+                let headers = [
+                    (header::CONTENT_TYPE, mime.as_ref().to_string()),
+                    (header::CONTENT_DISPOSITION, disposition),
+                ];
+                Ok((headers, data))
+            } else {
+                Err(StatusCode::NOT_FOUND)
+            }
+        }
+        Some(_) => Err(StatusCode::CONFLICT),
+        None => Err(StatusCode::NOT_FOUND),
+    }
+}
+
+/*async fn download_file(
+    State(state): State<Arc<AppState>>,
+    Path(job_id): Path<String>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let job = {
+        let map = state.jobs.read().await;
+        map.get(&job_id).cloned()
+    };
+    match job {
+        Some(j) if j.status == JobStatus::Done => {
+            if let Some(ref filename) = j.filename {
+                let path = PathBuf::from(filename);
+                if !path.exists() {
+                    return Err(StatusCode::NOT_FOUND);
+                }
+                let data = tokio::fs::read(&path)
+                    .await
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+                let mime = mime_guess::from_path(&path).first_or_octet_stream();
                 let disposition = format!(
                     "attachment; filename=\"{}\"",
                     sanitize_filename(j.title.as_deref().unwrap_or("download"))
@@ -388,7 +762,7 @@ async fn download_file(
         Some(_) => Err(StatusCode::CONFLICT),
         None => Err(StatusCode::NOT_FOUND),
     }
-}
+}*/
 
 // ---------- History endpoints (user‑specific) ----------
 
@@ -489,8 +863,13 @@ async fn download_again(
     let mime = mime_guess::from_path(&path).first_or_octet_stream();
     let disposition = format!(
         "attachment; filename=\"{}\"",
-        sanitize_filename(entry.title.as_deref().unwrap_or("download"))
-    );
+        //sanitize_filename(entry.title.as_deref().unwrap_or("download")
+        PathBuf::from(&file_path)
+    .file_name()
+    .map(|n| n.to_string_lossy().to_string())
+    .unwrap_or_else(|| "download".to_string())
+        );
+    
     let headers = [
         (header::CONTENT_TYPE, mime.as_ref().to_string()),
         (header::CONTENT_DISPOSITION, disposition),
