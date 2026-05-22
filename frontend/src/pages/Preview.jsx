@@ -33,6 +33,10 @@ export default function Preview() {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
 
+ // const [writeSubs, setWriteSubs] = useState(false);
+const [embedSubs, setEmbedSubs] = useState(false);
+const [subLangs, setSubLangs] = useState('auto');
+
   useEffect(() => {
     if (!data) {
       navigate('/');
@@ -82,6 +86,9 @@ export default function Preview() {
           speed_limit: speedLimit,
           start_time: startTime || undefined,
           end_time: endTime || undefined,
+          //write_subs: writeSubs,
+  embed_subs: embedSubs,
+  sub_langs: subLangs || undefined,
         }),
       });
       if (!res.ok) {
@@ -123,6 +130,9 @@ export default function Preview() {
             speed_limit: speedLimit,
             start_time: startTime || undefined,
             end_time: endTime || undefined,
+           // write_subs: writeSubs,
+  embed_subs: embedSubs,
+  sub_langs: subLangs || undefined,
           }),
         });
         if (!res.ok) {
@@ -285,6 +295,32 @@ export default function Preview() {
                 </div>
               </div>
             )}
+            {/* Subtitle Options */}
+<div className="space-y-3">
+  <label className="text-sm font-medium text-gray-400">Subtitles</label>
+  <div className="flex flex-wrap gap-4">
+    <label className="flex items-center gap-2">
+      <input
+        type="checkbox"
+        checked={embedSubs}
+        onChange={(e) => setEmbedSubs(e.target.checked)}
+        className="w-4 h-4 rounded accent-indigo-500"
+      />
+      <span className="text-sm text-gray-300">Embed in video</span>
+    </label>
+  </div>
+  <div className="flex items-center gap-2">
+    <span className="text-sm text-gray-400">Languages:</span>
+    <input
+      type="text"
+      value={subLangs}
+      onChange={(e) => setSubLangs(e.target.value)}
+      placeholder="auto"
+      className="w-24 px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-white text-sm"
+    />
+    <span className="text-xs text-gray-500">e.g. en, fr, -en</span>
+  </div>
+</div>
 
             {/* ---------- Phase 1 features ---------- */}
 
