@@ -298,6 +298,19 @@ async fn download(
 
     state.jobs.write().await.insert(job_id.clone(), job);
 
+    // ✅ CHANGE 1 — persist job to DB right after inserting into memory
+    sqlx::query(
+        "INSERT INTO jobs (id, status, progress, url, format, quality)
+         VALUES ($1, 'pending', 0, $2, $3, $4)"
+    )
+    .bind(&job_id)
+    .bind(&url)
+    .bind(&format)
+    .bind(&quality)
+    .execute(&state.db)
+    .await
+    .ok();
+
     let jobs = state.jobs.clone();
     let db = state.db.clone();
     let jid = job_id.clone();
@@ -307,10 +320,9 @@ async fn download(
     let start_time = payload.start_time.clone();
     let end_time = payload.end_time.clone();
 
-    // Add these alongside your other clones before tokio::spawn
-let write_subs = payload.write_subs;
-let embed_subs = payload.embed_subs;
-let sub_langs = payload.sub_langs.clone();
+    let write_subs = payload.write_subs;
+    let embed_subs = payload.embed_subs;
+    let sub_langs = payload.sub_langs.clone();
 
     tokio::spawn(async move {
         // Update to Processing
@@ -321,6 +333,14 @@ let sub_langs = payload.sub_langs.clone();
                 j.progress = 10;
             }
         }
+
+        // ✅ CHANGE 2 — update DB to processing
+        let _ = sqlx::query(
+            "UPDATE jobs SET status = 'processing', progress = 10 WHERE id = $1"
+        )
+        .bind(&jid)
+        .execute(&db)
+        .await;
 
         // Determine output template
         let filename_prefix = if let Some(ref custom) = custom_filename {
@@ -339,7 +359,7 @@ let sub_langs = payload.sub_langs.clone();
         cmd.arg("--no-simulate");
         cmd.arg("--print").arg("after_move:filepath");
 
-         if std::path::Path::new("/app/cookies.txt").exists() {
+        if std::path::Path::new("/app/cookies.txt").exists() {
             cmd.args(["--cookies", "/app/cookies.txt"]);
         }
 
@@ -371,10 +391,9 @@ let sub_langs = payload.sub_langs.clone();
             }
         }
 
-        // ---- Add subtitle options (only for video, but we can allow for audio too if user wants) ----
-   if format == "mp4" {
+        // Subtitle options
+        if format == "mp4" {
             if embed_subs.unwrap_or(false) {
-                // always write first, then embed
                 cmd.args(["--write-subs", "--embed-subs"]);
                 if let Some(ref langs) = sub_langs {
                     if !langs.is_empty() {
@@ -402,7 +421,6 @@ let sub_langs = payload.sub_langs.clone();
             Ok(output) if output.status.success() => {
                 let stdout = String::from_utf8_lossy(&output.stdout);
 
-                // Try the path yt-dlp printed via --print after_move:filepath
                 let printed_path = stdout
                     .lines()
                     .find(|l| !l.trim().is_empty())
@@ -416,7 +434,6 @@ let sub_langs = payload.sub_langs.clone();
                     }
                 }
 
-                // Fallback: scan output dir for a real media file with our prefix
                 if final_file.is_none() {
                     if let Ok(mut entries) = tokio::fs::read_dir(output_dir()).await {
                         while let Ok(Some(entry)) = entries.next_entry().await {
@@ -465,8 +482,7 @@ let sub_langs = payload.sub_langs.clone();
                                 let _ = tokio::fs::rename(&trimmed, &file_path).await;
                             }
                             Ok(_) => {
-                                j.error =
-                                    Some("Trimming failed, keeping original file".into());
+                                j.error = Some("Trimming failed, keeping original file".into());
                             }
                             Err(e) => {
                                 j.error = Some(format!("Trimming error: {}", e));
@@ -478,7 +494,16 @@ let sub_langs = payload.sub_langs.clone();
                     j.progress = 100;
                     j.filename = Some(file_path.to_string_lossy().into_owned());
 
-                    // Save to PostgreSQL
+                    // ✅ CHANGE 3 — update DB to done
+                    let _ = sqlx::query(
+                        "UPDATE jobs SET status = 'done', progress = 100, filename = $2 WHERE id = $1"
+                    )
+                    .bind(&jid)
+                    .bind(j.filename.as_deref())
+                    .execute(&db)
+                    .await;
+
+                    // Save to downloads history
                     let history_id = Uuid::new_v4();
                     let _ = sqlx::query(
                         "INSERT INTO downloads (id, job_id, user_id, url, title, format, quality, file_path, thumbnail)
@@ -495,35 +520,99 @@ let sub_langs = payload.sub_langs.clone();
                     .bind(j.thumbnail.as_deref())
                     .execute(&db)
                     .await;
+
                 } else {
                     j.status = JobStatus::Failed;
                     j.error = Some("Output file not found after download".into());
+
+                    // ✅ CHANGE 4 — update DB when file not found
+                    let _ = sqlx::query(
+                        "UPDATE jobs SET status = 'failed', error = $2 WHERE id = $1"
+                    )
+                    .bind(&jid)
+                    .bind("Output file not found after download")
+                    .execute(&db)
+                    .await;
                 }
             }
+
             Ok(output) => {
                 let stderr = String::from_utf8_lossy(&output.stderr);
-                let error_msg = if stderr.contains("No module named expat") 
-        || stderr.contains("CURRENTLY BROKEN") 
-    {
-        "Instagram downloads are currently not supported. Try YouTube, Vimeo, TikTok or other supported sites.".to_string()
-    } else {
-        format!("yt-dlp failed: {}", stderr)
-    };
+                let error_msg = if stderr.contains("No module named expat")
+                    || stderr.contains("CURRENTLY BROKEN")
+                {
+                    "Instagram downloads are currently not supported. Try YouTube, Vimeo, TikTok or other supported sites.".to_string()
+                } else {
+                    format!("yt-dlp failed: {}", stderr)
+                };
                 j.status = JobStatus::Failed;
-                j.error = Some(error_msg);
+                j.error = Some(error_msg.clone());
+
+                // ✅ CHANGE 5 — update DB when yt-dlp fails
+                let _ = sqlx::query(
+                    "UPDATE jobs SET status = 'failed', error = $2 WHERE id = $1"
+                )
+                .bind(&jid)
+                .bind(&error_msg)
+                .execute(&db)
+                .await;
             }
+
             Err(e) => {
                 j.status = JobStatus::Failed;
                 j.error = Some(e.to_string());
+
+                // ✅ CHANGE 6 — update DB when command fails
+                let error_str = e.to_string();
+                let _ = sqlx::query(
+                    "UPDATE jobs SET status = 'failed', error = $2 WHERE id = $1"
+                )
+                .bind(&jid)
+                .bind(&error_str)
+                .execute(&db)
+                .await;
             }
         }
     });
 
     Ok(Json(DownloadResponse { job_id }))
 }
-
-
 async fn job_status(
+    State(state): State<Arc<AppState>>,
+    Path(job_id): Path<String>,
+) -> Result<Json<StatusResponse>, StatusCode> {
+    // First check memory
+    {
+        let map = state.jobs.read().await;
+        if let Some(job) = map.get(&job_id) {
+            return Ok(Json(StatusResponse {
+                status: format!("{:?}", job.status).to_lowercase(),
+                progress: job.progress,
+                error: job.error.clone(),
+            }));
+        }
+    }
+
+    // Fallback to DB if not in memory (survives server restarts)
+    let row: Option<(String, i32, Option<String>)> = sqlx::query_as(
+        "SELECT status, progress, error FROM jobs WHERE id = $1"
+    )
+    .bind(&job_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    match row {
+        Some((status, progress, error)) => Ok(Json(StatusResponse {
+            status,
+            progress: progress as u8,
+            error,
+        })),
+        None => Err(StatusCode::NOT_FOUND),
+    }
+}
+
+/*async fn job_status(
     State(state): State<Arc<AppState>>,
     Path(job_id): Path<String>,
 ) -> Result<Json<StatusResponse>, StatusCode> {
@@ -537,7 +626,7 @@ async fn job_status(
     } else {
         Err(StatusCode::NOT_FOUND)
     }
-}
+}*/
 
 async fn download_file(
     State(state): State<Arc<AppState>>,
@@ -871,6 +960,25 @@ async fn main() {
 .execute(&pool)
 .await
 .expect("Failed to create shares table");
+
+sqlx::query(
+    "CREATE TABLE IF NOT EXISTS jobs (
+        id TEXT PRIMARY KEY,
+        status TEXT NOT NULL DEFAULT 'pending',
+        progress INTEGER NOT NULL DEFAULT 0,
+        filename TEXT,
+        error TEXT,
+        title TEXT,
+        url TEXT,
+        format TEXT,
+        quality TEXT,
+        thumbnail TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )"
+)
+.execute(&pool)
+.await
+.expect("Failed to create jobs table");
 
     let state = Arc::new(AppState {
         jobs: Arc::new(RwLock::new(HashMap::new())),
