@@ -15,6 +15,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
+use rand::Rng;
 use axum::debug_handler;
 
 // ---------- Data types ----------
@@ -78,12 +79,7 @@ struct PlaylistEntry {
     url: String,
 }
 
-/*#[derive(Deserialize)]
-struct DownloadRequest {
-    url: String,
-    format: String,
-    quality: Option<String>,
-}*/
+
 #[derive(Deserialize)]
 struct DownloadRequest {
     url: String,
@@ -96,6 +92,8 @@ struct DownloadRequest {
     write_subs: Option<bool>,   
     embed_subs: Option<bool>,   
     sub_langs: Option<String>,  
+    title: Option<String>,
+    thumbnail: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -108,6 +106,28 @@ struct StatusResponse {
     status: String,
     progress: u8,
     error: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct ShareRequest {
+    job_id: String,
+    password: Option<String>,
+    expires_in_hours: Option<i64>,
+}
+
+#[derive(Serialize)]
+struct ShareResponse {
+    url: String,
+    token: String,
+}
+
+#[derive(sqlx::FromRow)]
+struct ShareRecord {
+    id: Uuid,
+    job_id: String,
+    token: String,
+    password: Option<String>,
+    expires_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 struct AppState {
@@ -257,11 +277,11 @@ async fn download(
         progress: 0,
         filename: None,
         error: None,
-        title: None,
+        title: payload.title.clone(),
         url: Some(url.clone()),
         format: Some(format.clone()),
         quality: Some(quality.clone()),
-        thumbnail: None,
+        thumbnail: payload.thumbnail.clone(),
     };
 
     state.jobs.write().await.insert(job_id.clone(), job);
@@ -616,10 +636,12 @@ async fn delete_history(
 #[axum::debug_handler]
 async fn download_again(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,        // ← Path FIRST
-    headers: HeaderMap,           // ← HeaderMap SECOND
+    Path(id): Path<Uuid>,
+    headers: HeaderMap,
+    Query(params): Query<HashMap<String, String>>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let user_id = extract_user_id(&headers)?;
+    let user_id = extract_user_id(&headers)
+        .or_else(|_| params.get("user_id").cloned().ok_or(StatusCode::UNAUTHORIZED))?;
 
     let entry: HistoryEntry = sqlx::query_as(
         "SELECT id, job_id, user_id, url, title, format, quality, file_path, thumbnail, downloaded_at
@@ -651,6 +673,124 @@ async fn download_again(
     .unwrap_or_else(|| "download".to_string())
         );
     
+    let headers = [
+        (header::CONTENT_TYPE, mime.as_ref().to_string()),
+        (header::CONTENT_DISPOSITION, disposition),
+    ];
+    Ok((headers, data))
+}
+
+async fn create_share(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(payload): Json<ShareRequest>,
+) -> Result<Json<ShareResponse>, StatusCode> {
+    let _user_id = extract_user_id(&headers)?;
+
+    // Verify job exists and is done
+    let job = {
+        let map = state.jobs.read().await;
+        map.get(&payload.job_id).cloned()
+    }
+    .ok_or(StatusCode::NOT_FOUND)?;
+
+    if job.status != JobStatus::Done {
+        return Err(StatusCode::CONFLICT);
+    }
+
+    // Generate random token
+    let token: String = rand::thread_rng()
+        .sample_iter(&rand::distributions::Alphanumeric)
+        .take(12)
+        .map(char::from)
+        .collect();
+
+    let expires_at = payload.expires_in_hours.map(|h| {
+        chrono::Utc::now() + chrono::Duration::hours(h)
+    });
+
+    let share_id = Uuid::new_v4();
+    sqlx::query(
+        "INSERT INTO shares (id, job_id, token, password, expires_at)
+         VALUES ($1, $2, $3, $4, $5)"
+    )
+    .bind(share_id)
+    .bind(&payload.job_id)
+    .bind(&token)
+    .bind(&payload.password)
+    .bind(expires_at)
+    .execute(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(ShareResponse {
+        url: format!("http://localhost:4000/share/{}", token),
+        token,
+    }))
+}
+
+async fn serve_share(
+    State(state): State<Arc<AppState>>,
+    Path(token): Path<String>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<impl IntoResponse, StatusCode> {
+    // Fetch share record from DB using function (not macro)
+    let share: ShareRecord = sqlx::query_as::<_, ShareRecord>(
+        "SELECT id, job_id, token, password, expires_at FROM shares WHERE token = $1"
+    )
+    .bind(&token)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::NOT_FOUND)?;
+
+    // Check expiration
+    if let Some(exp) = share.expires_at {
+        if exp < chrono::Utc::now() {
+            return Err(StatusCode::GONE);
+        }
+    }
+
+    // Check password
+    if let Some(ref pass) = share.password {
+        let provided = params.get("password").cloned();
+        if provided.as_deref() != Some(pass.as_str()) {
+            return Err(StatusCode::UNAUTHORIZED);
+        }
+    }
+
+    // Look up file path from downloads table NOT from memory
+    // so it works even after server restarts
+    let row: Option<(Option<String>,)> = sqlx::query_as(
+        "SELECT file_path FROM downloads WHERE job_id = $1"
+    )
+    .bind(&share.job_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let file_path = row
+        .and_then(|(fp,)| fp)
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    let path = PathBuf::from(&file_path);
+    if !path.exists() {
+        return Err(StatusCode::NOT_FOUND);
+    }
+
+    let data = tokio::fs::read(&path)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let mime = mime_guess::from_path(&path).first_or_octet_stream();
+
+    // Use actual filename from disk (fix for the title bug)
+    let actual_filename = path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "download".to_string());
+
+    let disposition = format!("attachment; filename=\"{}\"", actual_filename);
     let headers = [
         (header::CONTENT_TYPE, mime.as_ref().to_string()),
         (header::CONTENT_DISPOSITION, disposition),
@@ -693,6 +833,20 @@ async fn main() {
     .await
     .expect("Failed to create downloads table");
 
+    sqlx::query(
+    "CREATE TABLE IF NOT EXISTS shares (
+        id UUID PRIMARY KEY,
+        job_id TEXT NOT NULL,
+        token TEXT UNIQUE NOT NULL,
+        password TEXT,
+        expires_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )"
+)
+.execute(&pool)
+.await
+.expect("Failed to create shares table");
+
     let state = Arc::new(AppState {
         jobs: Arc::new(RwLock::new(HashMap::new())),
         db: pool,
@@ -706,6 +860,8 @@ async fn main() {
         .route("/history", get(list_history))
         .route("/history/:id", delete(delete_history))
         .route("/download-again/:id", get(download_again))
+        .route("/share", post(create_share))
+.route("/share/:token", get(serve_share))
         .layer(CorsLayer::permissive())
         .with_state(state);
 

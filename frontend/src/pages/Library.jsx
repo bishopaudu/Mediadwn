@@ -10,6 +10,21 @@ export default function Library() {
   const userId = getUserId();
   const [loading, setLoading] = useState(true);
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      return new Date(dateStr).toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
   const fetchHistory = async (q = '') => {
     try {
       const params = q ? `?q=${encodeURIComponent(q)}` : '';
@@ -32,7 +47,10 @@ export default function Library() {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`http://localhost:4000/history/${id}`, { method: 'DELETE' });
+      await fetch(`http://localhost:4000/history/${id}`, {
+        method: 'DELETE',
+        headers: { 'X-User-ID': userId },
+      });
       fetchHistory(search);
     } catch (err) {
       console.error(err);
@@ -40,12 +58,12 @@ export default function Library() {
   };
 
   return (
-    <main className="min-h-screen px-4 py-8 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-gray-950 to-indigo-950/30 -z-10" />
-      <div className="w-full max-w-4xl mx-auto space-y-8">
+    <main className="min-h-screen px-4 py-8 relative transition-colors duration-300">
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-indigo-50 dark:from-gray-950 dark:to-indigo-950 -z-10" />
+      <div className="w-full max-w-4xl mx-auto space-y-8 text-slate-900 dark:text-white">
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:text-gray-400 dark:hover:text-white transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
@@ -53,26 +71,26 @@ export default function Library() {
         <h2 className="text-3xl font-bold">Library</h2>
 
         <div className="relative">
-          <Search className="absolute left-4 top-3.5 w-5 h-5 text-gray-500" />
+          <Search className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 dark:text-gray-500" />
           <input
             type="text"
             placeholder="Search downloads..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-12 pr-4 py-3 bg-white/60 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 backdrop-blur-md"
           />
         </div>
 
         {loading ? (
-          <p className="text-gray-400">Loading...</p>
+          <p className="text-slate-500 dark:text-gray-400">Loading...</p>
         ) : entries.length === 0 ? (
-          <p className="text-gray-400 text-center">No downloads yet.</p>
+          <p className="text-slate-500 dark:text-gray-400 text-center">No downloads yet.</p>
         ) : (
           <div className="grid gap-4">
             {entries.map((entry) => (
               <div
                 key={entry.id}
-                className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors"
+                className="flex items-center gap-4 p-4 bg-white/60 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/10 shadow-sm dark:shadow-none backdrop-blur-md transition-colors"
               >
                 {entry.thumbnail && (
                   <img
@@ -82,26 +100,26 @@ export default function Library() {
                   />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{entry.title || 'Untitled'}</p>
-                  <p className="text-xs text-gray-500">
-                    {entry.format.toUpperCase()} {entry.quality && `• ${entry.quality}`} • {entry.downloaded_at}
+                  <p className="font-medium truncate text-slate-900 dark:text-white">{entry.title || 'Untitled'}</p>
+                  <p className="text-xs text-slate-500 dark:text-gray-400">
+                    {entry.format.toUpperCase()} {entry.quality && `• ${entry.quality}`} • {formatDate(entry.downloaded_at)}
                   </p>
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
                   <a
-                    href={`http://localhost:4000/download-again/${entry.id}`}
+                    href={`http://localhost:4000/download-again/${entry.id}?user_id=${userId}`}
                     download
-                    className="p-2 rounded-lg bg-green-600/20 hover:bg-green-600/30 transition-colors"
+                    className="p-2 rounded-lg bg-green-100 hover:bg-green-200 dark:bg-green-600/20 dark:hover:bg-green-600/30 transition-colors cursor-pointer"
                     title="Download again"
                   >
-                    <Download className="w-4 h-4 text-green-400" />
+                    <Download className="w-4 h-4 text-green-600 dark:text-green-400" />
                   </a>
                   <button
                     onClick={() => handleDelete(entry.id)}
-                    className="p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 transition-colors"
+                    className="p-2 rounded-lg bg-red-100 hover:bg-red-200 dark:bg-red-600/20 dark:hover:bg-red-600/30 transition-colors cursor-pointer"
                     title="Delete"
                   >
-                    <Trash2 className="w-4 h-4 text-red-400" />
+                    <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                   </button>
                 </div>
               </div>

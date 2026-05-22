@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Smooth page transitions */
 body {
-  @apply bg-gray-950 text-white antialiased;
+  @apply bg-slate-50 text-slate-900 dark:bg-gray-950 dark:text-white antialiased transition-colors duration-300;
 }
 
 /* Custom animation delay for background blobs */
