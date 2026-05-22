@@ -178,12 +178,21 @@ async fn analyze(
     if url.is_empty() {
         return Err((StatusCode::BAD_REQUEST, "URL is required".into()));
     }
-    // ... same yt-dlp logic as before
-    let output = tokio::process::Command::new("yt-dlp")
+    
+   /*  let output = tokio::process::Command::new("yt-dlp")
         .args(["-J", "--flat-playlist", &url])
         .output()
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;*/
+    let mut cmd = tokio::process::Command::new("yt-dlp");
+if std::path::Path::new("/app/cookies.txt").exists() {
+    cmd.args(["--cookies", "/app/cookies.txt"]);
+}
+cmd.args(["-J", "--flat-playlist", &url]);
+let output = cmd
+    .output()
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
    /*  if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err((StatusCode::BAD_REQUEST, format!("yt-dlp error: {}", stderr)));
@@ -329,6 +338,10 @@ let sub_langs = payload.sub_langs.clone();
         cmd.arg("-o").arg(&output_template).arg(&url);
         cmd.arg("--no-simulate");
         cmd.arg("--print").arg("after_move:filepath");
+
+         if std::path::Path::new("/app/cookies.txt").exists() {
+            cmd.args(["--cookies", "/app/cookies.txt"]);
+        }
 
         match format.as_str() {
             "mp3" => {
@@ -806,6 +819,10 @@ async fn serve_share(
 #[tokio::main]
 async fn main() {
         dotenv().ok();
+        if let Ok(cookies) = std::env::var("YOUTUBE_COOKIES") {
+        tokio::fs::write("/app/cookies.txt", cookies).await.ok();
+        println!("YouTube cookies loaded");
+    }
     ensure_output_dir().await;
 
     // Connect to PostgreSQL
