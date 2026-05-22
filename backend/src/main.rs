@@ -299,7 +299,7 @@ async fn download(
     state.jobs.write().await.insert(job_id.clone(), job);
 
     // ✅ CHANGE 1 — persist job to DB right after inserting into memory
-    sqlx::query(
+  /*   sqlx::query(
         "INSERT INTO jobs (id, status, progress, url, format, quality)
          VALUES ($1, 'pending', 0, $2, $3, $4)"
     )
@@ -309,7 +309,24 @@ async fn download(
     .bind(&quality)
     .execute(&state.db)
     .await
-    .ok();
+    .ok();*/
+let insert_result = sqlx::query(
+    "INSERT INTO jobs (id, status, progress, url, format, quality)
+     VALUES ($1, 'pending', 0, $2, $3, $4)"
+)
+.bind(&job_id)
+.bind(&url)
+.bind(&format)
+.bind(&quality)
+.execute(&state.db)
+.await;
+
+// ADD THIS
+eprintln!("Job DB insert result: {:?}", insert_result.is_ok());
+if let Err(ref e) = insert_result {
+    eprintln!("Job insert error: {}", e);
+}
+
 
     let jobs = state.jobs.clone();
     let db = state.db.clone();
@@ -985,7 +1002,7 @@ sqlx::query(
 .execute(&pool)
 .await
 .expect("Failed to create jobs table");
-
+println!("Jobs table ready"); 
     let state = Arc::new(AppState {
         jobs: Arc::new(RwLock::new(HashMap::new())),
         db: pool,
