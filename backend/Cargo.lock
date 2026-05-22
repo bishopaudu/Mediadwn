@@ -894,6 +894,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "chrono",
+ "dotenvy",
  "mime_guess",
  "rand",
  "serde",

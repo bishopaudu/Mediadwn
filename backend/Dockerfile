@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
 RUN cargo build --release
 
 # ---- Runtime stage ----
-FROM debian:bookworm-slim
+FROM rust:latest
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y \

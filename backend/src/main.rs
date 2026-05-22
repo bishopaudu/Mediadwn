@@ -17,7 +17,7 @@ use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 use rand::Rng;
 use axum::debug_handler;
-
+use dotenvy::dotenv;
 // ---------- Data types ----------
 
 #[derive(Clone, Debug, Serialize)]
@@ -802,14 +802,19 @@ async fn serve_share(
 
 #[tokio::main]
 async fn main() {
+        dotenv().ok();
     ensure_output_dir().await;
 
     // Connect to PostgreSQL
-    let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://mediadwn:mediadwn@localhost/mediadwn".to_string());
+   // let database_url = std::env::var("DATABASE_URL_HOSTED")
+      //  .unwrap_or_else(|_| data_base_hosted.to_string());
+      let database_url =
+        std::env::var("DATABASE_URL")
+            .expect("DATABASE_URL must be set");
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
+        .acquire_timeout(std::time::Duration::from_secs(10))
         .connect(&database_url)
         .await
         .expect("Failed to create PostgreSQL pool");
