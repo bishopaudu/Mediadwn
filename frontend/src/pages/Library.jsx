@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, Download, Search } from 'lucide-react';
 import { getUserId } from '../helper/userID';
+import API_BASE from '../config';
 
 export default function Library() {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ export default function Library() {
   const fetchHistory = async (q = '') => {
     try {
       const params = q ? `?q=${encodeURIComponent(q)}` : '';
-      const res = await fetch(`http://localhost:4000/history${params}`, {
+      const res = await fetch(`${API_BASE}/history${params}`, {
     headers: { 'X-User-ID': userId },
   });
       if (!res.ok) throw new Error('Failed to fetch history');

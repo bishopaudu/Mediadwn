@@ -2,6 +2,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Download, CheckCircle2, XCircle, Loader2, ArrowLeft, Share2, Copy, Check } from 'lucide-react';
 import { getUserId } from '../helper/userID';
+import API_BASE from '../config';
 
 export default function Progress() {
   const [searchParams] = useSearchParams();
@@ -25,7 +26,7 @@ export default function Progress() {
     }
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`http://localhost:4000/status/${job_id}`);
+        const res = await fetch(`${API_BASE}/status/${job_id}`);
         if (!res.ok) throw new Error('Job not found');
         const data = await res.json();
         setStatus(data.status);

@@ -1,5 +1,6 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import API_BASE from '../config';
 import {
   Download,
   CheckCircle2,
@@ -34,7 +35,7 @@ export default function BatchProgress() {
         allDone = false;
         try {
           const res = await fetch(
-            `http://localhost:4000/status/${job.id}`
+            `${API_BASE}/status/${job.id}`
           );
           if (!res.ok) throw new Error('Job not found');
           const data = await res.json();

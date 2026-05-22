@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Loader2, ArrowRight } from 'lucide-react';
+import API_BASE from '../config';
 
 export default function Home() {
   const [url, setUrl] = useState('');
@@ -14,7 +15,7 @@ export default function Home() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:4000/analyze', {
+      const res = await fetch(`${API_BASE}/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
