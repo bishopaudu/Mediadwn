@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+
 import {
   ArrowLeft,
   Download,
@@ -12,6 +13,7 @@ import {
   Gauge,
   FileText,
   Subtitles,
+  User, Eye, HardDrive, Clock
 } from 'lucide-react';
 import { getUserId } from '../helper/userID';
 import API_BASE from '../config';
@@ -36,6 +38,30 @@ export default function Preview() {
   const [endTime, setEndTime]               = useState('');
   const [embedSubs, setEmbedSubs]           = useState(false);
   const [subLangs, setSubLangs]             = useState('en');
+
+  const formatDuration = (seconds) => {
+  if (!seconds) return '';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${m}:${String(s).padStart(2, '0')}`;
+};
+
+const formatViews = (count) => {
+  if (!count) return '';
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M views`;
+  if (count >= 1_000) return `${(count / 1_000).toFixed(0)}K views`;
+  return `${count} views`;
+};
+
+const formatSize = (bytes) => {
+  if (!bytes) return '';
+  if (bytes >= 1_073_741_824) return `${(bytes / 1_073_741_824).toFixed(1)} GB`;
+  if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(0)} MB`;
+  return `${(bytes / 1024).toFixed(0)} KB`;
+};
+
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 50);
@@ -130,6 +156,7 @@ export default function Preview() {
     }
   };
 
+  
   /* ─── helpers ─── */
   const Section = ({ label, icon: Icon, children }) => (
     <div className="space-y-3">
@@ -215,13 +242,57 @@ export default function Preview() {
             </div>
           )}
 
-          {info && !playlist && (
+         {/* {info && !playlist && (
             <div className="px-6 py-4 border-t border-[#E0DDD8] dark:border-[#2A2A28]">
               <h2 className="font-['Fraunces',_serif] font-bold text-xl leading-snug text-[#1A1A1A] dark:text-[#E8E8E6]">
                 {info.title}
               </h2>
             </div>
-          )}
+          )} */}
+          {info && !playlist && (
+  <div className="px-6 py-4 border-t border-[#E0DDD8] dark:border-[#2A2A28]">
+    <h2 className="font-['Fraunces',_serif] font-bold text-xl leading-snug text-[#1A1A1A] dark:text-[#E8E8E6]">
+      {info.title}
+    </h2>
+
+    {/* ADD THIS — info pills */}
+    <div className="flex flex-wrap items-center gap-2 mt-3">
+      {info.uploader && (
+        <span className="flex items-center gap-1.5 text-xs text-[#6B6B6B] dark:text-[#888]">
+          <User className="w-3 h-3" />
+          {info.uploader}
+        </span>
+      )}
+      {info.duration && (
+        <>
+          <span className="text-[#E0DDD8] dark:text-[#2A2A28]">·</span>
+          <span className="flex items-center gap-1.5 text-xs text-[#6B6B6B] dark:text-[#888]">
+            <Clock className="w-3 h-3" />
+            {formatDuration(info.duration)}
+          </span>
+        </>
+      )}
+      {info.view_count && (
+        <>
+          <span className="text-[#E0DDD8] dark:text-[#2A2A28]">·</span>
+          <span className="flex items-center gap-1.5 text-xs text-[#6B6B6B] dark:text-[#888]">
+            <Eye className="w-3 h-3" />
+            {formatViews(info.view_count)}
+          </span>
+        </>
+      )}
+      {info.filesize_approx && (
+        <>
+          <span className="text-[#E0DDD8] dark:text-[#2A2A28]">·</span>
+          <span className="flex items-center gap-1.5 text-xs text-[#6B6B6B] dark:text-[#888]">
+            <HardDrive className="w-3 h-3" />
+            ~{formatSize(info.filesize_approx)}
+          </span>
+        </>
+      )}
+    </div>
+  </div>
+)}
         </div>
 
         {/* ── Playlist selector ── */}

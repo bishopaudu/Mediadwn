@@ -16,7 +16,6 @@ use tokio::sync::RwLock;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 use rand::Rng;
-use axum::debug_handler;
 use dotenvy::dotenv;
 // ---------- Data types ----------
 
@@ -69,6 +68,10 @@ enum AnalyzeResponse {
         title: String,
         thumbnail: String,
         is_playlist: bool,
+         duration: Option<f64>,
+        view_count: Option<i64>,
+        uploader: Option<String>,
+        filesize_approx: Option<i64>,
     },
     Playlist(Vec<PlaylistEntry>),
 }
@@ -172,8 +175,6 @@ async fn analyze(
     Json(payload): Json<AnalyzeRequest>,
 ) -> Result<Json<AnalyzeResponse>, (StatusCode, String)> {
         eprintln!("Analyzing URL: {}", payload.url.trim());
-
-    // unchanged – see previous version
     let url = payload.url.trim().to_string();
     if url.is_empty() {
         return Err((StatusCode::BAD_REQUEST, "URL is required".into()));
@@ -254,10 +255,19 @@ let output = cmd
     } else {
         let title = json["title"].as_str().unwrap_or("Unknown").to_string();
         let thumbnail = json["thumbnail"].as_str().unwrap_or("").to_string();
+        // ADD THESE
+    let duration = json["duration"].as_f64();
+    let view_count = json["view_count"].as_i64();
+    let uploader = json["uploader"].as_str().map(|s| s.to_string());
+    let filesize_approx = json["filesize_approx"].as_i64();
         Ok(Json(AnalyzeResponse::Single {
             title,
             thumbnail,
             is_playlist: false,
+             duration,
+        view_count,
+        uploader,
+        filesize_approx,
         }))
     }
 }
@@ -298,7 +308,6 @@ async fn download(
 
     state.jobs.write().await.insert(job_id.clone(), job);
 
-    // ✅ CHANGE 1 — persist job to DB right after inserting into memory
   /*   sqlx::query(
         "INSERT INTO jobs (id, status, progress, url, format, quality)
          VALUES ($1, 'pending', 0, $2, $3, $4)"
@@ -351,7 +360,6 @@ if let Err(ref e) = insert_result {
             }
         }
 
-        // ✅ CHANGE 2 — update DB to processing
         let _ = sqlx::query(
             "UPDATE jobs SET status = 'processing', progress = 10 WHERE id = $1"
         )
