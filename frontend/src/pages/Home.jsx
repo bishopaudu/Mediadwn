@@ -187,6 +187,26 @@ export default function Home() {
       <div className="flex-1 flex flex-col items-center justify-center w-full py-8 z-10">
         <div className={`w-full max-w-lg space-y-8 transition-all duration-700 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
 
+          {/* Logo Icon */}
+          <div className={`flex justify-center transition-all duration-500 delay-[25ms] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <div className="relative group cursor-pointer">
+              {/* Glow backdrop */}
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-300" />
+              <svg className="w-16 h-16 relative transform group-hover:scale-105 transition-transform duration-300" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="logo-grad-home" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#6366F1" />
+                    <stop offset="50%" stopColor="#8B5CF6" />
+                    <stop offset="100%" stopColor="#EC4899" />
+                  </linearGradient>
+                </defs>
+                <rect width="100" height="100" rx="28" fill="url(#logo-grad-home)" />
+                <path d="M 50 64 L 32 36 L 68 36 Z" fill="white" />
+                <rect x="32" y="70" width="36" height="6" rx="3" fill="white" />
+              </svg>
+            </div>
+          </div>
+
           {/* Badge */}
           <div className={`flex justify-center transition-all duration-500 delay-[50ms] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 animate-badge-pulse">

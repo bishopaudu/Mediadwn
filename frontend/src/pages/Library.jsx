@@ -85,9 +85,18 @@ export default function Library() {
         </button>
 
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 bg-[#1A1A1A] dark:bg-[#E8E8E6] rounded-sm flex items-center justify-center">
-            <div className="w-2.5 h-2.5 bg-[#FAFAF8] dark:bg-[#0F0F0E] rounded-[2px]" />
-          </div>
+          <svg className="w-5 h-5" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="logo-grad-nav" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#6366F1" />
+                <stop offset="50%" stopColor="#8B5CF6" />
+                <stop offset="100%" stopColor="#EC4899" />
+              </linearGradient>
+            </defs>
+            <rect width="100" height="100" rx="28" fill="url(#logo-grad-nav)" />
+            <path d="M 50 64 L 32 36 L 68 36 Z" fill="white" />
+            <rect x="32" y="70" width="36" height="6" rx="3" fill="white" />
+          </svg>
           <span className="font-['Fraunces',_serif] font-bold text-base tracking-tight">mediadwn</span>
         </div>
       </nav>
