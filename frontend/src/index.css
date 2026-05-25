@@ -2,29 +2,120 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Smooth page transitions */
+/* ─── Base ─────────────────────────────────────────────── */
 body {
   @apply bg-slate-50 text-slate-900 dark:bg-gray-950 dark:text-white antialiased transition-colors duration-300;
 }
 
-/* Custom animation delay for background blobs */
+/* Better scrollbar globally */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.4);
+  border-radius: 3px;
+}
+
+/* ─── Floating orbs ─────────────────────────────────────── */
+.orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: -1;
+  will-change: transform, opacity;
+}
+
+.orb-1 {
+  width: 420px;
+  height: 420px;
+  top: 10%;
+  left: -8%;
+  background: radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%);
+  animation: float-orb 12s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 360px;
+  height: 360px;
+  bottom: 5%;
+  right: -6%;
+  background: radial-gradient(circle, rgba(168,85,247,0.16) 0%, transparent 70%);
+  animation: float-orb 15s ease-in-out infinite reverse;
+  animation-delay: -4s;
+}
+
+.orb-3 {
+  width: 240px;
+  height: 240px;
+  top: 55%;
+  left: 45%;
+  background: radial-gradient(circle, rgba(139,92,246,0.10) 0%, transparent 70%);
+  animation: float-orb 10s ease-in-out infinite;
+  animation-delay: -7s;
+}
+
+@keyframes float-orb {
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(18px, -22px) scale(1.04); }
+  66%  { transform: translate(-14px, 16px) scale(0.97); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+/* ─── Badge pulse ───────────────────────────────────────── */
+@keyframes badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+  50%       { box-shadow: 0 0 0 5px rgba(99,102,241,0.12); }
+}
+
+.animate-badge-pulse {
+  animation: badge-pulse 3s ease-in-out infinite;
+}
+
+/* ─── Shake (error state) ───────────────────────────────── */
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-5px); }
+  40%     { transform: translateX(5px); }
+  60%     { transform: translateX(-4px); }
+  80%     { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.45s ease-in-out;
+}
+
+/* ─── Feature card stagger entrance ────────────────────── */
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.feature-card {
+  animation: card-in 0.5s ease-out both;
+}
+
+/* ─── Legacy pulse-delayed (kept for other pages) ──────── */
 @keyframes pulse-delayed {
   0%, 100% { opacity: 0.2; }
-  50% { opacity: 0.1; }
+  50%       { opacity: 0.1; }
 }
 
 .animate-pulse-delayed {
   animation: pulse-delayed 6s ease-in-out infinite;
 }
 
-/* Better scrollbar globally */
-::-webkit-scrollbar {
-  width: 6px;
+/* ─── Infinite Marquee ──────────────────────────────────── */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
-::-webkit-scrollbar-track {
-  background: transparent;
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 30s linear infinite;
 }
-::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.4);
-  border-radius: 3px;
+
+.animate-marquee:hover {
+  animation-play-state: paused;
 }

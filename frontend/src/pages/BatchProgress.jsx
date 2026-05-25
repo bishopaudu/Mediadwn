@@ -2,11 +2,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import API_BASE from '../config';
 import {
-  Download,
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  ArrowLeft,
+  Download, CheckCircle2, XCircle, Loader2, ArrowLeft, ListVideo,
 } from 'lucide-react';
 
 export default function BatchProgress() {
@@ -15,15 +11,19 @@ export default function BatchProgress() {
   const jobIds = (searchParams.get('job_ids') || '').split(',').filter(Boolean);
   const format = searchParams.get('format');
 
-  const [jobs, setJobs] = useState(
-    jobIds.map((id) => ({ id, status: 'pending', progress: 0, error: null }))
-  );
+  const [jobs, setJobs]       = useState(jobIds.map((id) => ({ id, status: 'pending', progress: 0, error: null })));
+  const [mounted, setMounted] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    if (jobIds.length === 0) {
-      navigate('/');
-      return;
-    }
+    const t = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (jobIds.length === 0) { navigate('/'); return; }
+
+    const timer = setInterval(() => setElapsed(e => e + 1), 1000);
 
     const interval = setInterval(async () => {
       const updatedJobs = [...jobs];
@@ -34,147 +34,285 @@ export default function BatchProgress() {
         if (job.status === 'done' || job.status === 'failed') continue;
         allDone = false;
         try {
-          const res = await fetch(
-            `${API_BASE}/status/${job.id}`
-          );
+          const res  = await fetch(`${API_BASE}/status/${job.id}`);
           if (!res.ok) throw new Error('Job not found');
           const data = await res.json();
-          job.status = data.status;
+          job.status   = data.status;
           job.progress = data.progress;
-          job.error = data.error || null;
+          job.error    = data.error || null;
         } catch (e) {
           job.status = 'failed';
-          job.error = e.message;
+          job.error  = e.message;
         }
       }
 
       setJobs([...updatedJobs]);
-
-      if (allDone) {
-        clearInterval(interval);
-      }
+      if (allDone) { clearInterval(interval); clearInterval(timer); }
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => { clearInterval(interval); clearInterval(timer); };
   }, [jobIds, navigate]);
+
+  const overallProgress = () => {
+    if (jobs.length === 0) return 0;
+    const completed = jobs.filter((j) => j.status === 'done' || j.status === 'failed').length;
+    return Math.round((completed / jobs.length) * 100);
+  };
+
+  const allFinished = jobs.every((j) => j.status === 'done' || j.status === 'failed');
+  const doneCount   = jobs.filter((j) => j.status === 'done').length;
+  const failedCount = jobs.filter((j) => j.status === 'failed').length;
 
   const statusIcon = (status) => {
     switch (status) {
       case 'pending':
+        return <Loader2 className="w-4 h-4 animate-spin text-[#B0ADA8] dark:text-[#444]" />;
       case 'processing':
-        return <Loader2 className="w-5 h-5 animate-spin text-indigo-600 dark:text-indigo-400" />;
+        return <Loader2 className="w-4 h-4 animate-spin text-indigo-500 dark:text-indigo-400" />;
       case 'done':
-        return <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />;
+        return <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" style={{ animation: 'popIn 0.35s cubic-bezier(0.34,1.56,0.64,1)' }} />;
       case 'failed':
-        return <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />;
+        return <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />;
       default:
         return null;
     }
   };
 
-  const overallProgress = () => {
-    const total = jobs.length;
-    if (total === 0) return 0;
-    const completed = jobs.filter(
-      (j) => j.status === 'done' || j.status === 'failed'
-    ).length;
-    return Math.round((completed / total) * 100);
+  const formatElapsed = (s) => {
+    if (s < 60) return `${s}s`;
+    return `${Math.floor(s / 60)}m ${s % 60}s`;
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 relative transition-colors duration-300">
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-indigo-50 dark:from-gray-950 dark:to-indigo-950 -z-10" />
-      <div className="w-full max-w-lg space-y-8">
+    <main className="min-h-screen bg-[#FAFAF8] dark:bg-[#0F0F0E] text-[#1A1A1A] dark:text-[#E8E8E6] font-['DM_Sans',_sans-serif]">
+
+      {/* ── Grid background ── */}
+      <div
+        className="fixed inset-0 opacity-[0.022] dark:opacity-[0.045] pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(#1A1A1A 1px, transparent 1px), linear-gradient(90deg, #1A1A1A 1px, transparent 1px)`,
+          backgroundSize: '64px 64px',
+        }}
+      />
+
+      {/* ── Floating orbs ── */}
+      <div className="fixed top-[-80px] right-[-60px] w-[360px] h-[360px] rounded-full pointer-events-none"
+           style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.09) 0%, transparent 70%)', filter: 'blur(70px)', animation: 'float-orb 14s ease-in-out infinite' }} />
+      <div className="fixed bottom-[-60px] left-[-50px] w-[280px] h-[280px] rounded-full pointer-events-none"
+           style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.07) 0%, transparent 70%)', filter: 'blur(70px)', animation: 'float-orb 18s ease-in-out infinite reverse', animationDelay: '-5s' }} />
+
+      {/* ── Nav ── */}
+      <nav
+        className="relative z-10 flex items-center px-8 py-6 max-w-lg mx-auto"
+        style={{
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? 'translateY(0)' : 'translateY(-8px)',
+          transition: 'opacity 0.4s ease, transform 0.4s ease',
+        }}
+      >
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:text-gray-400 dark:hover:text-white transition-colors cursor-pointer"
+          className="flex items-center gap-2 text-sm text-[#6B6B6B] dark:text-[#888] hover:text-[#1A1A1A] dark:hover:text-[#E8E8E6] transition-colors duration-200 group cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-200" />
           Back
         </button>
+      </nav>
 
-        <div className="backdrop-blur-xl bg-white/60 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 shadow-2xl text-slate-900 dark:text-white space-y-6">
-          <h2 className="text-2xl font-bold text-center text-slate-900 dark:text-white">
-            Downloading {jobs.length} item{jobs.length > 1 ? 's' : ''}
-          </h2>
+      {/* ── Card ── */}
+      <div
+        className="relative z-10 max-w-lg mx-auto px-8 pb-20 space-y-5"
+        style={{
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? 'translateY(0)' : 'translateY(18px)',
+          transition: 'opacity 0.55s ease 0.1s, transform 0.55s ease 0.1s',
+        }}
+      >
 
-          {/* Overall progress bar */}
-          <div className="space-y-2">
-            <div className="w-full bg-slate-200 dark:bg-gray-800 rounded-full h-3 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-700 ease-out"
-                style={{ width: `${overallProgress()}%` }}
-              />
+        {/* Header card */}
+        <div className="rounded-2xl border border-[#E0DDD8] dark:border-[#2A2A28] bg-white dark:bg-[#1A1A18] shadow-sm overflow-hidden">
+
+          {/* Title row */}
+          <div className="px-6 py-5 border-b border-[#F0EDE8] dark:border-[#2A2A28] flex items-center gap-3">
+            <span className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400">
+              <ListVideo className="w-5 h-5" />
+            </span>
+            <div>
+              <h2 className="font-['Fraunces',_serif] font-bold text-lg text-[#1A1A1A] dark:text-[#E8E8E6] leading-tight">
+                Batch Download
+              </h2>
+              <p className="text-xs text-[#6B6B6B] dark:text-[#888] mt-0.5">
+                {jobs.length} item{jobs.length > 1 ? 's' : ''} · {formatElapsed(elapsed)} elapsed
+              </p>
             </div>
-            <p className="text-sm text-slate-500 dark:text-gray-500 text-center">
-              {overallProgress()}% complete
-            </p>
           </div>
 
-          {/* Individual job list */}
-          <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+          {/* Overall progress */}
+          <div className="px-6 py-5 space-y-3">
+            <div className="flex items-center justify-between text-xs text-[#6B6B6B] dark:text-[#888]">
+              <span>Overall progress</span>
+              <span className="tabular-nums font-semibold text-[#1A1A1A] dark:text-[#E8E8E6]">{overallProgress()}%</span>
+            </div>
+            <div className="w-full h-2 bg-[#F0EDE8] dark:bg-[#2A2A28] rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+                style={{
+                  width: `${overallProgress()}%`,
+                  background: allFinished
+                    ? 'linear-gradient(90deg, #16a34a, #22c55e)'
+                    : 'linear-gradient(90deg, #4F46E5, #7C3AED)',
+                }}
+              >
+                {!allFinished && (
+                  <span className="absolute inset-0 animate-bar-shimmer bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+                )}
+              </div>
+            </div>
+
+            {/* Stats row */}
+            <div className="flex items-center gap-4 text-xs">
+              <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                {doneCount} done
+              </span>
+              {failedCount > 0 && (
+                <span className="flex items-center gap-1 text-red-500 dark:text-red-400">
+                  <XCircle className="w-3.5 h-3.5" />
+                  {failedCount} failed
+                </span>
+              )}
+              <span className="text-[#B0ADA8] dark:text-[#444] ml-auto">
+                {jobs.length - doneCount - failedCount} remaining
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Job list ── */}
+        <div className="rounded-2xl border border-[#E0DDD8] dark:border-[#2A2A28] bg-white dark:bg-[#1A1A18] shadow-sm overflow-hidden">
+          <div className="px-6 py-3.5 border-b border-[#F0EDE8] dark:border-[#2A2A28]">
+            <span className="text-xs font-semibold uppercase tracking-widest text-[#6B6B6B] dark:text-[#888]">
+              Items
+            </span>
+          </div>
+          <div className="max-h-72 overflow-y-auto">
             {jobs.map((job, idx) => (
               <div
                 key={job.id}
-                className={`p-3 rounded-xl border text-slate-800 dark:text-white ${
-                  job.status === 'failed'
-                    ? 'border-red-200 bg-red-50/50 dark:border-red-400/30 dark:bg-red-400/5'
-                    : job.status === 'done'
-                    ? 'border-green-200 bg-green-50/50 dark:border-green-400/30 dark:bg-green-400/5'
-                    : 'border-slate-200 bg-slate-50/50 dark:border-white/10 dark:bg-white/5'
-                } flex items-center gap-3`}
+                className={`px-6 py-4 flex items-center gap-3 border-b border-[#F5F4F0] dark:border-[#1E1E1C] last:border-0 transition-colors duration-300 ${
+                  job.status === 'done'
+                    ? 'bg-green-50/40 dark:bg-green-500/[0.04]'
+                    : job.status === 'failed'
+                    ? 'bg-red-50/40 dark:bg-red-500/[0.04]'
+                    : ''
+                }`}
+                style={{ animation: `batchItemIn 0.4s ease ${idx * 60}ms both` }}
               >
-                {statusIcon(job.status)}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {job.id.slice(0, 8)}... ({job.status})
-                  </p>
-                  {job.status === 'processing' && (
-                    <div className="mt-1 w-full bg-slate-200 dark:bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                {/* Status icon */}
+                <div className="flex-shrink-0 w-5">{statusIcon(job.status)}</div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium text-[#1A1A1A] dark:text-[#E8E8E6] truncate">
+                      Item {idx + 1}
+                      <span className="ml-2 text-xs font-normal text-[#B0ADA8] dark:text-[#444]">
+                        {job.id.slice(0, 8)}…
+                      </span>
+                    </p>
+                    <span className={`flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${
+                      job.status === 'done'    ? 'bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-400' :
+                      job.status === 'failed'  ? 'bg-red-100 dark:bg-red-500/15 text-red-600 dark:text-red-400' :
+                      job.status === 'processing' ? 'bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400' :
+                      'bg-[#F0EDE8] dark:bg-[#2A2A28] text-[#6B6B6B] dark:text-[#888]'
+                    }`}>
+                      {job.status}
+                    </span>
+                  </div>
+
+                  {/* Per-job bar */}
+                  {(job.status === 'processing' || job.status === 'pending') && (
+                    <div className="w-full h-1 bg-[#F0EDE8] dark:bg-[#2A2A28] rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-indigo-500 rounded-full transition-all duration-500"
-                        style={{ width: `${job.progress}%` }}
-                      />
+                        className="h-full rounded-full transition-all duration-500 ease-out relative overflow-hidden"
+                        style={{
+                          width: `${job.progress}%`,
+                          background: job.status === 'processing'
+                            ? 'linear-gradient(90deg, #4F46E5, #7C3AED)'
+                            : '#C8C4BE',
+                        }}
+                      >
+                        {job.status === 'processing' && (
+                          <span className="absolute inset-0 animate-bar-shimmer bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                        )}
+                      </div>
                     </div>
                   )}
+
                   {job.error && (
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-1 truncate">{job.error}</p>
+                    <p className="text-xs text-red-500 dark:text-red-400 truncate">{job.error}</p>
                   )}
                 </div>
+
+                {/* Download link */}
                 {job.status === 'done' && (
                   <a
                     href={`${API_BASE}/file/${job.id}`}
                     download
-                    className="flex-shrink-0 p-2 rounded-lg bg-green-100 hover:bg-green-200 dark:bg-green-600/20 dark:hover:bg-green-600/30 transition-colors cursor-pointer"
+                    className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-green-100 hover:bg-green-200 dark:bg-green-500/15 dark:hover:bg-green-500/25 text-green-700 dark:text-green-400 rounded-lg text-xs font-medium transition-colors duration-200 cursor-pointer"
+                    style={{ animation: 'popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both' }}
                   >
-                    <Download className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    <Download className="w-3.5 h-3.5" />
+                    {format?.toUpperCase()}
                   </a>
                 )}
               </div>
             ))}
           </div>
+        </div>
 
-          {jobs.every((j) => j.status === 'done' || j.status === 'failed') && (
+        {/* ── All done CTA ── */}
+        {allFinished && (
+          <div style={{ animation: 'fadeSlideIn 0.4s ease both' }}>
             <button
               onClick={() => navigate('/')}
-              className="w-full py-3 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 rounded-xl border border-slate-200 dark:border-white/10 transition-colors text-slate-800 dark:text-white cursor-pointer"
+              className="relative w-full py-4 rounded-xl font-semibold text-white overflow-hidden group transition-all duration-200 cursor-pointer active:scale-[0.98]"
             >
-              Start Over
+              <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600" />
+              <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+              <span className="relative">Start Over</span>
             </button>
-          )}
-        </div>
+          </div>
+        )}
+
       </div>
 
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap');
+
+        @keyframes popIn {
+          from { transform: scale(0.5); opacity: 0; }
+          to   { transform: scale(1);   opacity: 1; }
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
+
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(99, 102, 241, 0.5);
-          border-radius: 2px;
+
+        @keyframes batchItemIn {
+          from { opacity: 0; transform: translateX(-10px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes bar-shimmer {
+          0%   { transform: translateX(-100%); }
+          100% { transform: translateX(300%); }
+        }
+
+        .animate-bar-shimmer {
+          animation: bar-shimmer 1.6s ease-in-out infinite;
         }
       `}</style>
     </main>
