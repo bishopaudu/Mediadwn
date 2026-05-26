@@ -30,6 +30,38 @@ const Section = ({ label, icon: Icon, children }) => (
   </div>
 );
 
+const getEstimatedSize = (info, format, quality) => {
+  if (!info) return null;
+  const duration = info.duration;
+  const baseSize = info.filesize_approx;
+
+  if (format === 'mp3') {
+    if (duration) {
+      return duration * 24000; // ~192kbps
+    }
+    if (baseSize) {
+      return baseSize * 0.12; // Audio portion
+    }
+    return null;
+  }
+
+  // MP4
+  if (baseSize) {
+    if (quality === '360p') return baseSize * 0.3;
+    if (quality === '720p') return baseSize;
+    if (quality === '1080p') return baseSize * 1.8;
+    return baseSize;
+  }
+
+  if (duration) {
+    if (quality === '360p') return duration * 62500;
+    if (quality === '720p') return duration * 187500;
+    if (quality === '1080p') return duration * 437500;
+  }
+
+  return null;
+};
+
 export default function Preview() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -43,6 +75,8 @@ export default function Preview() {
   const [error, setError]             = useState('');
   const [downloading, setDownloading] = useState(false);
   const [mounted, setMounted]         = useState(false);
+
+  const estimatedSize = getEstimatedSize(info, format, quality);
 
   const [customFilename, setCustomFilename] = useState('');
   const [speedLimit, setSpeedLimit]         = useState('unlimited');
@@ -272,12 +306,12 @@ const formatSize = (bytes) => {
                     </span>
                   </>
                 )}
-                {info.filesize_approx && (
+                {estimatedSize && (
                   <>
                     <span className="text-slate-300 dark:text-white/20">·</span>
                     <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-gray-400">
                       <HardDrive className="w-3 h-3" />
-                      ~{formatSize(info.filesize_approx)}
+                      ~{formatSize(estimatedSize)}
                     </span>
                   </>
                 )}
@@ -353,18 +387,25 @@ const formatSize = (bytes) => {
             <Section label="Format">
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { id: 'mp4', label: 'MP4 Video', icon: Video },
-                  { id: 'mp3', label: 'MP3 Audio', icon: Music },
-                ].map(({ id, label, icon: Icon }) => (
+                  { id: 'mp4', label: 'MP4 Video', icon: Video, estSize: getEstimatedSize(info, 'mp4', quality) },
+                  { id: 'mp3', label: 'MP3 Audio', icon: Music, estSize: getEstimatedSize(info, 'mp3', quality) },
+                ].map(({ id, label, icon: Icon, estSize }) => (
                   <button
                     key={id}
                     onClick={() => setFormat(id)}
-                    className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer ${
+                    className={`flex items-center justify-between px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer ${
                       format === id ? activeBtn : inactiveBtn
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
-                    {label}
+                    <div className="flex items-center gap-2.5">
+                      <Icon className="w-4 h-4" />
+                      {label}
+                    </div>
+                    {estSize && (
+                      <span className={`text-xs ${format === id ? 'text-white/80' : 'text-slate-400 dark:text-gray-500'}`}>
+                        ~{formatSize(estSize)}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -376,17 +417,25 @@ const formatSize = (bytes) => {
             <div className="px-6 py-5">
               <Section label="Quality">
                 <div className="grid grid-cols-3 gap-2">
-                  {['360p', '720p', '1080p'].map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => setQuality(q)}
-                      className={`py-2.5 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer ${
-                        quality === q ? activeBtn : inactiveBtn
-                      }`}
-                    >
-                      {q}
-                    </button>
-                  ))}
+                  {['360p', '720p', '1080p'].map((q) => {
+                    const estSize = getEstimatedSize(info, 'mp4', q);
+                    return (
+                      <button
+                        key={q}
+                        onClick={() => setQuality(q)}
+                        className={`flex flex-col items-center justify-center py-2.5 rounded-xl border font-medium transition-all duration-200 cursor-pointer ${
+                          quality === q ? activeBtn : inactiveBtn
+                        }`}
+                      >
+                        <span className="text-sm">{q}</span>
+                        {estSize && (
+                          <span className={`text-[10px] mt-0.5 ${quality === q ? 'text-white/80' : 'text-slate-400 dark:text-gray-500'}`}>
+                            ~{formatSize(estSize)}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </Section>
             </div>
@@ -519,7 +568,10 @@ const formatSize = (bytes) => {
                 {downloading ? (
                   <><Loader2 className="w-4 h-4 animate-spin" />Starting download…</>
                 ) : (
-                  <><Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform duration-200" />Download {format.toUpperCase()}</>
+                  <>
+                    <Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform duration-200" />
+                    Download {format.toUpperCase()} {estimatedSize ? `(~${formatSize(estimatedSize)})` : ''}
+                  </>
                 )}
               </span>
             </button>
