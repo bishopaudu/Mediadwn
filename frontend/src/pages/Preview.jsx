@@ -18,6 +18,18 @@ import {
 import { getUserId } from '../helper/userID';
 import API_BASE from '../config';
 
+const Section = ({ label, icon: Icon, children }) => (
+  <div className="space-y-3">
+    <div className="flex items-center gap-2">
+      {Icon && <Icon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />}
+      <span className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-gray-500">
+        {label}
+      </span>
+    </div>
+    {children}
+  </div>
+);
+
 export default function Preview() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -158,17 +170,6 @@ const formatSize = (bytes) => {
 
   
   /* ─── helpers ─── */
-  const Section = ({ label, icon: Icon, children }) => (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        {Icon && <Icon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />}
-        <span className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-gray-500">
-          {label}
-        </span>
-      </div>
-      {children}
-    </div>
-  );
 
   const inputClass =
     "w-full px-4 py-2.5 bg-white/80 dark:bg-gray-900/60 border border-slate-200 dark:border-gray-700/50 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-transparent transition-all duration-200";
