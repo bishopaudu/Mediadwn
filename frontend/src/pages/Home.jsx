@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Loader2, ArrowRight, Film, Music, Zap, Shield, BookOpen, Sparkles } from 'lucide-react';
 import API_BASE from '../config';
+import InfoModal from '../components/InfoModal';
 
 const features = [
   { icon: Film,     label: 'MP4 Video',    sub: 'Up to 1080p' },
@@ -134,6 +135,7 @@ export default function Home() {
   const [error, setError]     = useState('');
   const [focused, setFocused] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [activeModal, setActiveModal] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -169,7 +171,7 @@ export default function Home() {
     <main className="min-h-screen flex flex-col justify-between px-4 relative overflow-hidden transition-colors duration-300">
 
       {/* ── Animated gradient background ── */}
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-slate-100 to-purple-50 dark:from-[#0a0514] dark:via-gray-950 dark:to-[#0d0a1f] -z-10" />
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-slate-100 to-blue-50 dark:from-[#030a14] dark:via-gray-950 dark:to-[#030d1a] -z-10" />
 
       {/* ── Floating orbs ── */}
       <div className="orb orb-1" />
@@ -180,32 +182,36 @@ export default function Home() {
       <div className="absolute inset-0 opacity-[0.025] dark:opacity-[0.06] -z-10 pointer-events-none"
            style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
 
+      {/* ── Top-Left Logo / Header ── */}
+      <div className={`fixed top-6 left-6 md:left-8 z-40 flex items-center gap-3 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
+        <div className="relative group cursor-pointer flex items-center gap-2.5">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-indigo-500 to-sky-400 rounded-xl blur-md opacity-30 group-hover:opacity-50 transition-opacity duration-300" />
+            <svg className="w-9 h-9 relative transform group-hover:scale-105 transition-transform duration-300" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="logo-grad-header" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#3B82F6" />
+                  <stop offset="50%" stopColor="#6366F1" />
+                  <stop offset="100%" stopColor="#38BDF8" />
+                </linearGradient>
+              </defs>
+              <rect width="100" height="100" rx="28" fill="url(#logo-grad-header)" />
+              <path d="M 50 64 L 32 36 L 68 36 Z" fill="white" />
+              <rect x="32" y="70" width="36" height="6" rx="3" fill="white" />
+            </svg>
+          </div>
+          <span className="text-xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-sky-300 bg-clip-text text-transparent tracking-tight font-sans">
+            mediadwn
+          </span>
+        </div>
+      </div>
+
       {/* Spacer to balance vertical centering */}
       <div className="h-6 shrink-0 md:h-12" />
 
       {/* ── Main card ── */}
       <div className="flex-1 flex flex-col items-center justify-center w-full py-8 z-10">
         <div className={`w-full max-w-lg space-y-8 transition-all duration-700 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-
-          {/* Logo Icon */}
-          <div className={`flex justify-center transition-all duration-500 delay-[25ms] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <div className="relative group cursor-pointer">
-              {/* Glow backdrop */}
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-300" />
-              <svg className="w-16 h-16 relative transform group-hover:scale-105 transition-transform duration-300" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="logo-grad-home" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#6366F1" />
-                    <stop offset="50%" stopColor="#8B5CF6" />
-                    <stop offset="100%" stopColor="#EC4899" />
-                  </linearGradient>
-                </defs>
-                <rect width="100" height="100" rx="28" fill="url(#logo-grad-home)" />
-                <path d="M 50 64 L 32 36 L 68 36 Z" fill="white" />
-                <rect x="32" y="70" width="36" height="6" rx="3" fill="white" />
-              </svg>
-            </div>
-          </div>
 
           {/* Badge */}
           <div className={`flex justify-center transition-all duration-500 delay-[50ms] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
@@ -217,9 +223,6 @@ export default function Home() {
 
           {/* Heading */}
           <div className={`text-center space-y-3 transition-all duration-600 delay-[100ms] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <h1 className="text-6xl font-black tracking-tight bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 dark:from-indigo-400 dark:via-violet-300 dark:to-purple-300 bg-clip-text text-transparent leading-tight">
-              mediadwn
-            </h1>
             <p className="text-base text-slate-500 dark:text-gray-400 max-w-sm mx-auto leading-relaxed">
               Paste any video or playlist link — pick your format and download instantly.
             </p>
@@ -269,9 +272,9 @@ export default function Home() {
                 className="relative w-full py-4 rounded-xl font-semibold text-white overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 group cursor-pointer active:scale-[0.98]"
               >
                 {/* Gradient base */}
-                <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 transition-opacity duration-300" />
+                <span className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 transition-opacity duration-300" />
                 {/* Hover shimmer layer */}
-                <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <span className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 {/* Shimmer sweep */}
                 <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out bg-gradient-to-r from-transparent via-white/15 to-transparent" />
                 {/* Content */}
@@ -342,9 +345,10 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-6">
-          <a href="#" className="hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200">Terms</a>
-          <a href="#" className="hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200">Privacy</a>
-          <a href="#" className="hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200">API Docs</a>
+          <button onClick={() => setActiveModal('about')} className="hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200 cursor-pointer">About</button>
+          <button onClick={() => setActiveModal('terms')} className="hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200 cursor-pointer">Terms</button>
+          <button onClick={() => setActiveModal('privacy')} className="hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200 cursor-pointer">Privacy</button>
+          <button onClick={() => setActiveModal('contact')} className="hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200 cursor-pointer">Contact</button>
           <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200">GitHub</a>
         </div>
 
@@ -356,6 +360,10 @@ export default function Home() {
           <span>All systems operational</span>
         </div>
       </footer>
+
+      {activeModal && (
+        <InfoModal type={activeModal} onClose={() => setActiveModal(null)} />
+      )}
     </main>
   );
 }

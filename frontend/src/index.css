@@ -39,7 +39,7 @@ body {
   height: 360px;
   bottom: 5%;
   right: -6%;
-  background: radial-gradient(circle, rgba(168,85,247,0.16) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(59,130,246,0.16) 0%, transparent 70%);
   animation: float-orb 15s ease-in-out infinite reverse;
   animation-delay: -4s;
 }
@@ -49,7 +49,7 @@ body {
   height: 240px;
   top: 55%;
   left: 45%;
-  background: radial-gradient(circle, rgba(139,92,246,0.10) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(56,189,248,0.10) 0%, transparent 70%);
   animation: float-orb 10s ease-in-out infinite;
   animation-delay: -7s;
 }

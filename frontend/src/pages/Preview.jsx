@@ -174,14 +174,14 @@ const formatSize = (bytes) => {
     "w-full px-4 py-2.5 bg-white/80 dark:bg-gray-900/60 border border-slate-200 dark:border-gray-700/50 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-transparent transition-all duration-200";
 
   /* ─── active/inactive pill styles ─── */
-  const activeBtn  = "bg-gradient-to-r from-indigo-600 to-purple-600 border-transparent text-white scale-[1.02] shadow-md shadow-indigo-500/20";
+  const activeBtn  = "bg-gradient-to-r from-blue-600 to-indigo-600 border-transparent text-white scale-[1.02] shadow-md shadow-blue-500/20";
   const inactiveBtn = "bg-white/60 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.08] text-slate-600 dark:text-gray-400 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/[0.07]";
 
   return (
     <main className="min-h-screen flex flex-col relative overflow-hidden transition-colors duration-300">
 
       {/* ── Animated gradient background ── */}
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-slate-100 to-purple-50 dark:from-[#0a0514] dark:via-gray-950 dark:to-[#0d0a1f] -z-10" />
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-slate-100 to-blue-50 dark:from-[#030a14] dark:via-gray-950 dark:to-[#030d1a] -z-10" />
 
       {/* ── Floating orbs ── */}
       <div className="orb orb-1" />
@@ -511,8 +511,8 @@ const formatSize = (bytes) => {
               disabled={downloading}
               className="relative w-full py-4 rounded-xl font-semibold text-white overflow-hidden disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 group cursor-pointer active:scale-[0.98]"
             >
-              <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 transition-opacity duration-300" />
-              <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <span className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 transition-opacity duration-300" />
+              <span className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out bg-gradient-to-r from-transparent via-white/15 to-transparent" />
               <span className="relative flex items-center justify-center gap-2">
                 {downloading ? (
@@ -534,8 +534,8 @@ const formatSize = (bytes) => {
               disabled={downloading || selectedUrls.size === 0}
               className="relative w-full py-4 rounded-xl font-semibold text-white overflow-hidden disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 group cursor-pointer active:scale-[0.98]"
             >
-              <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 transition-opacity duration-300" />
-              <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <span className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 transition-opacity duration-300" />
+              <span className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out bg-gradient-to-r from-transparent via-white/15 to-transparent" />
               <span className="relative flex items-center justify-center gap-2">
                 {downloading ? (

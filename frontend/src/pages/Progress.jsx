@@ -249,7 +249,7 @@ export default function Progress() {
                     style={{
                       width: `${progress}%`,
                       background: status === 'processing'
-                        ? 'linear-gradient(90deg, #4F46E5, #7C3AED)'
+                        ? 'linear-gradient(90deg, #2563EB, #4F46E5)'
                         : '#C8C4BE',
                     }}
                   >
@@ -282,8 +282,8 @@ export default function Progress() {
                   className="relative w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl font-semibold text-white overflow-hidden group transition-all duration-200 active:scale-[0.98]"
                   style={{ animation: 'fadeSlideIn 0.4s ease both' }}
                 >
-                  <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600" />
-                  <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <span className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600" />
+                  <span className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
                   <span className="relative flex items-center gap-2">
                     <Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform duration-200" />

@@ -99,7 +99,7 @@ export default function BatchProgress() {
       <div className="fixed top-[-80px] right-[-60px] w-[360px] h-[360px] rounded-full pointer-events-none"
            style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.09) 0%, transparent 70%)', filter: 'blur(70px)', animation: 'float-orb 14s ease-in-out infinite' }} />
       <div className="fixed bottom-[-60px] left-[-50px] w-[280px] h-[280px] rounded-full pointer-events-none"
-           style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.07) 0%, transparent 70%)', filter: 'blur(70px)', animation: 'float-orb 18s ease-in-out infinite reverse', animationDelay: '-5s' }} />
+           style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.07) 0%, transparent 70%)', filter: 'blur(70px)', animation: 'float-orb 18s ease-in-out infinite reverse', animationDelay: '-5s' }} />
 
       {/* ── Nav ── */}
       <nav
@@ -160,7 +160,7 @@ export default function BatchProgress() {
                   width: `${overallProgress()}%`,
                   background: allFinished
                     ? 'linear-gradient(90deg, #16a34a, #22c55e)'
-                    : 'linear-gradient(90deg, #4F46E5, #7C3AED)',
+                    : 'linear-gradient(90deg, #2563EB, #4F46E5)',
                 }}
               >
                 {!allFinished && (
@@ -238,7 +238,7 @@ export default function BatchProgress() {
                         style={{
                           width: `${job.progress}%`,
                           background: job.status === 'processing'
-                            ? 'linear-gradient(90deg, #4F46E5, #7C3AED)'
+                            ? 'linear-gradient(90deg, #2563EB, #4F46E5)'
                             : '#C8C4BE',
                         }}
                       >
@@ -278,8 +278,8 @@ export default function BatchProgress() {
               onClick={() => navigate('/')}
               className="relative w-full py-4 rounded-xl font-semibold text-white overflow-hidden group transition-all duration-200 cursor-pointer active:scale-[0.98]"
             >
-              <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600" />
-              <span className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <span className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600" />
+              <span className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
               <span className="relative">Start Over</span>
             </button>
