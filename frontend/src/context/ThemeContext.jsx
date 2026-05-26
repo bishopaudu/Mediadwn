@@ -4,11 +4,11 @@ const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => {
-    return localStorage.getItem('theme') || 'system';
+    return localStorage.getItem('theme') || 'dark';
   });
 
   const [resolvedTheme, setResolvedTheme] = useState(() => {
-    const initialTheme = localStorage.getItem('theme') || 'system';
+    const initialTheme = localStorage.getItem('theme') || 'dark';
     if (initialTheme === 'system') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
