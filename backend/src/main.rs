@@ -719,8 +719,23 @@ async fn create_share(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    let base_url = std::env::var("BACKEND_URL")
+        .or_else(|_| std::env::var("APP_URL"))
+        .unwrap_or_else(|_| {
+            let host = headers
+                .get("x-forwarded-host")
+                .or_else(|| headers.get("host"))
+                .and_then(|h| h.to_str().ok())
+                .unwrap_or("localhost:4000");
+            let proto = headers
+                .get("x-forwarded-proto")
+                .and_then(|p| p.to_str().ok())
+                .unwrap_or("http");
+            format!("{}://{}", proto, host)
+        });
+
     Ok(Json(ShareResponse {
-        url: format!("http://localhost:4000/share/{}", token),
+        url: format!("{}/share/{}", base_url, token),
         token,
     }))
 }

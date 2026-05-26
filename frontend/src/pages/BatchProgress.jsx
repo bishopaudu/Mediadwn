@@ -84,7 +84,7 @@ export default function BatchProgress() {
   };
 
   return (
-    <main className="min-h-screen bg-[#FAFAF8] dark:bg-[#0F0F0E] text-[#1A1A1A] dark:text-[#E8E8E6] font-['DM_Sans',_sans-serif]">
+    <main className="min-h-screen bg-[#FAFAF8] dark:bg-[#0F0F0E] text-[#1A1A1A] dark:text-[#E8E8E6]">
 
       {/* ── Grid background ── */}
       <div
@@ -138,7 +138,7 @@ export default function BatchProgress() {
               <ListVideo className="w-5 h-5" />
             </span>
             <div>
-              <h2 className="font-['Fraunces',_serif] font-bold text-lg text-[#1A1A1A] dark:text-[#E8E8E6] leading-tight">
+              <h2 className="font-bold text-lg text-[#1A1A1A] dark:text-[#E8E8E6] leading-tight">
                 Batch Download
               </h2>
               <p className="text-xs text-[#6B6B6B] dark:text-[#888] mt-0.5">
@@ -289,7 +289,6 @@ export default function BatchProgress() {
       </div>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap');
 
         @keyframes popIn {
           from { transform: scale(0.5); opacity: 0; }
