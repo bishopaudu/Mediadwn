@@ -675,7 +675,6 @@ async fn download_file(
 }
 
 
-
 async fn create_share(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,
@@ -683,14 +682,31 @@ async fn create_share(
 ) -> Result<Json<ShareResponse>, StatusCode> {
     let _user_id = extract_user_id(&headers)?;
 
-    // Verify job exists and is done
-    let job = {
+    // Check memory first, fall back to DB
+    let is_done = {
         let map = state.jobs.read().await;
-        map.get(&payload.job_id).cloned()
-    }
-    .ok_or(StatusCode::NOT_FOUND)?;
+        map.get(&payload.job_id).map(|j| j.status == JobStatus::Done)
+    };
 
-    if job.status != JobStatus::Done {
+    let is_done = match is_done {
+        Some(val) => val,
+        None => {
+            let row: Option<(String,)> = sqlx::query_as(
+                "SELECT status FROM jobs WHERE id = $1"
+            )
+            .bind(&payload.job_id)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+            match row {
+                Some((status,)) => status == "done",
+                None => return Err(StatusCode::NOT_FOUND),
+            }
+        }
+    };
+
+    if !is_done {
         return Err(StatusCode::CONFLICT);
     }
 
@@ -745,7 +761,7 @@ async fn serve_share(
     Path(token): Path<String>,
     Query(params): Query<HashMap<String, String>>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    // Fetch share record from DB using function (not macro)
+    // Fetch share record
     let share: ShareRecord = sqlx::query_as::<_, ShareRecord>(
         "SELECT id, job_id, token, password, expires_at FROM shares WHERE token = $1"
     )
@@ -770,10 +786,9 @@ async fn serve_share(
         }
     }
 
-    // Look up file path from downloads table NOT from memory
-    // so it works even after server restarts
+    // Look up filename from jobs table (downloads table removed)
     let row: Option<(Option<String>,)> = sqlx::query_as(
-        "SELECT file_path FROM downloads WHERE job_id = $1"
+        "SELECT filename FROM jobs WHERE id = $1"
     )
     .bind(&share.job_id)
     .fetch_optional(&state.db)
@@ -795,7 +810,6 @@ async fn serve_share(
 
     let mime = mime_guess::from_path(&path).first_or_octet_stream();
 
-    // Use actual filename from disk (fix for the title bug)
     let actual_filename = path
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
