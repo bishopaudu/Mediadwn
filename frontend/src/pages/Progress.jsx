@@ -305,8 +305,8 @@ export default function Progress() {
                   </button>
                 ) : (
                   <div className="space-y-2" style={{ animation: 'fadeSlideIn 0.3s ease both' }}>
-                    <p className="text-xs text-[#6B6B6B] dark:text-[#888]">
-                      Share link — <span className="text-[#B0ADA8] dark:text-[#444]">expires in 24h</span>
+                    <p className={`text-xs transition-all duration-300 ${copied ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-[#6B6B6B] dark:text-[#888]'}`}>
+                      {copied ? '✓ Link copied! (Valid for 24 hours only)' : <>Share link — <span className="text-[#B0ADA8] dark:text-[#444]">expires in 24h</span></>}
                     </p>
                     <div className="flex items-center gap-2 bg-[#F5F4F0] dark:bg-[#1A1A18] border border-[#E0DDD8] dark:border-[#2A2A28] px-4 py-2.5 rounded-xl">
                       <input
