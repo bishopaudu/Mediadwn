@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, ArrowRight, Film, Music, Zap, Shield, BookOpen, Sparkles } from 'lucide-react';
+import { Search, Loader2, ArrowRight, Film, Music, Zap, Shield, BookOpen, Sparkles, ChevronDown } from 'lucide-react';
 import API_BASE from '../config';
 import InfoModal from '../components/InfoModal';
 
@@ -125,6 +125,41 @@ function SitePill({ site }) {
     >
       <Icon />
       <span>{site.name}</span>
+    </div>
+  );
+}
+
+function FaqItem({ question, answer }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      className={`rounded-xl border transition-all duration-300 overflow-hidden
+        ${open
+          ? 'border-blue-300 dark:border-blue-500/40 bg-blue-50/40 dark:bg-blue-500/[0.05] shadow-sm shadow-blue-100 dark:shadow-blue-500/10'
+          : 'border-slate-200 dark:border-white/[0.07] bg-white/50 dark:bg-white/[0.02] hover:border-blue-200 dark:hover:border-white/[0.12]'
+        }`}
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left cursor-pointer group"
+      >
+        <span className={`text-sm font-semibold transition-colors duration-200 ${open ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-white'}`}>
+          {question}
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 flex-shrink-0 transition-all duration-300 ${
+            open ? 'rotate-180 text-blue-500' : 'text-slate-400 dark:text-gray-500 group-hover:text-blue-400'
+          }`}
+        />
+      </button>
+      <div
+        className="overflow-hidden transition-all duration-300 ease-in-out"
+        style={{ maxHeight: open ? '300px' : '0px', opacity: open ? 1 : 0 }}
+      >
+        <p className="px-5 pb-4 text-sm text-slate-500 dark:text-gray-400 leading-relaxed">
+          {answer}
+        </p>
+      </div>
     </div>
   );
 }
@@ -335,6 +370,49 @@ export default function Home() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* ── FAQ Section ── */}
+      <div className={`w-full max-w-2xl mx-auto px-4 pb-8 z-10 space-y-3 transition-all duration-700 delay-[550ms] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <div className="text-center mb-6">
+          <span className="text-[10px] tracking-[0.2em] font-bold text-slate-400 dark:text-gray-500 uppercase">Frequently Asked Questions</span>
+        </div>
+        {[
+          {
+            q: 'What is mediadwn?',
+            a: 'mediadwn is a free online service that lets you download videos and audio from popular platforms like YouTube, TikTok, Instagram, Twitter/X, SoundCloud, and more. Simply paste a URL, choose your format and quality, and download your file instantly.'
+          },
+          {
+            q: 'Is mediadwn free to use?',
+            a: 'Yes — completely free. There are no hidden fees, no premium tiers, and no account registration required. Just paste a link and go.'
+          },
+          {
+            q: 'Which platforms are supported?',
+            a: 'We support YouTube, TikTok, Instagram, Twitter/X, Facebook, SoundCloud, Vimeo, Twitch, and thousands of other sites powered by yt-dlp. If a platform is publicly accessible, there is a good chance we can fetch it.'
+          },
+          {
+            q: 'What formats and qualities can I download?',
+            a: 'You can download MP4 video (at 360p, 720p, or 1080p) or MP3 audio (high-quality extraction). We also support trimming a video to a specific time range and embedding subtitle tracks into your download.'
+          },
+          {
+            q: 'Can I download entire playlists?',
+            a: 'Yes! Paste a playlist URL and mediadwn will detect it automatically. You can then select individual videos from the playlist or batch-download them all at once.'
+          },
+          {
+            q: 'Are my downloaded files stored on your servers?',
+            a: 'Only temporarily. Once your file is processed, it is cached briefly on our servers to allow your browser to retrieve it. It is then automatically deleted. We do not keep, share, or analyse any media content you download.'
+          },
+          {
+            q: 'Why did my download fail?',
+            a: 'Some videos may be private, age-restricted, region-locked, or have been removed by the original publisher. Live streams that have not yet ended are also not supported. If a public video fails, the platform may have recently changed its streaming format — feel free to contact us and we will investigate.'
+          },
+          {
+            q: 'Is it legal to download videos?',
+            a: 'mediadwn is intended for personal archiving, offline viewing, and content you have the right to save. Always respect the copyright and Terms of Service of the source platform. We do not condone downloading content for redistribution or commercial use.'
+          },
+        ].map(({ q, a }, i) => (
+          <FaqItem key={i} question={q} answer={a} />
+        ))}
       </div>
 
       {/* ── Footer ── */}
