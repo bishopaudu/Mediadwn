@@ -292,18 +292,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Library link */}
-          <div className={`text-center transition-all duration-600 delay-[300ms] ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-            <button
-              id="library-btn"
-              onClick={() => navigate('/library')}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors duration-200 group cursor-pointer"
-            >
-              <BookOpen className="w-4 h-4 group-hover:-rotate-6 transition-transform duration-200" />
-              View Library
-            </button>
-          </div>
-
           {/* Feature pills */}
           <div className={`grid grid-cols-2 gap-3 transition-all duration-700 delay-[400ms] ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             {features.map(({ icon: Icon, label, sub }, i) => (

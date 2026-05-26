@@ -161,8 +161,8 @@ const formatSize = (bytes) => {
   const Section = ({ label, icon: Icon, children }) => (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        {Icon && <Icon className="w-3.5 h-3.5 text-[#6B6B6B] dark:text-[#888]" />}
-        <span className="text-xs font-semibold uppercase tracking-widest text-[#6B6B6B] dark:text-[#888] font-['DM_Sans',_sans-serif]">
+        {Icon && <Icon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />}
+        <span className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-gray-500">
           {label}
         </span>
       </div>
@@ -171,33 +171,30 @@ const formatSize = (bytes) => {
   );
 
   const inputClass =
-    "w-full px-4 py-2.5 bg-[#F5F4F0] dark:bg-[#1A1A18] border border-[#E0DDD8] dark:border-[#2A2A28] rounded-xl text-[#1A1A1A] dark:text-[#E8E8E6] placeholder:text-[#B0ADA8] dark:placeholder:text-[#444] font-['DM_Sans',_sans-serif] text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent transition-all duration-200";
+    "w-full px-4 py-2.5 bg-white/80 dark:bg-gray-900/60 border border-slate-200 dark:border-gray-700/50 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-transparent transition-all duration-200";
 
   /* ─── active/inactive pill styles ─── */
-  const activeBtn  = "bg-[#1A1A1A] dark:bg-[#E8E8E6] border-[#1A1A1A] dark:border-[#E8E8E6] text-white dark:text-[#0F0F0E] scale-[1.02] shadow-md";
-  const inactiveBtn = "bg-[#F5F4F0] dark:bg-[#1A1A18] border-[#E0DDD8] dark:border-[#2A2A28] text-[#6B6B6B] dark:text-[#888] hover:border-[#C8B8A2] dark:hover:border-[#555] hover:bg-[#ECEAE6] dark:hover:bg-[#222]";
+  const activeBtn  = "bg-gradient-to-r from-indigo-600 to-purple-600 border-transparent text-white scale-[1.02] shadow-md shadow-indigo-500/20";
+  const inactiveBtn = "bg-white/60 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.08] text-slate-600 dark:text-gray-400 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/[0.07]";
 
   return (
-    <main className="min-h-screen bg-[#FAFAF8] dark:bg-[#0F0F0E] text-[#1A1A1A] dark:text-[#E8E8E6] font-['DM_Sans',_sans-serif]">
+    <main className="min-h-screen flex flex-col relative overflow-hidden transition-colors duration-300">
 
-      {/* ── Subtle grid ── */}
-      <div
-        className="fixed inset-0 opacity-[0.022] dark:opacity-[0.045] pointer-events-none"
-        style={{
-          backgroundImage: `linear-gradient(#1A1A1A 1px, transparent 1px), linear-gradient(90deg, #1A1A1A 1px, transparent 1px)`,
-          backgroundSize: '64px 64px',
-        }}
-      />
+      {/* ── Animated gradient background ── */}
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-slate-100 to-purple-50 dark:from-[#0a0514] dark:via-gray-950 dark:to-[#0d0a1f] -z-10" />
 
-      {/* ── Floating orbs (subtle, preview-page colours) ── */}
-      <div className="fixed top-[-80px] right-[-80px] w-[420px] h-[420px] rounded-full pointer-events-none"
-           style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.09) 0%, transparent 70%)', filter: 'blur(60px)', animation: 'float-orb 14s ease-in-out infinite' }} />
-      <div className="fixed bottom-[-60px] left-[-60px] w-[340px] h-[340px] rounded-full pointer-events-none"
-           style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.07) 0%, transparent 70%)', filter: 'blur(60px)', animation: 'float-orb 18s ease-in-out infinite reverse', animationDelay: '-5s' }} />
+      {/* ── Floating orbs ── */}
+      <div className="orb orb-1" />
+      <div className="orb orb-2" />
+      <div className="orb orb-3" />
+
+      {/* ── Noise / grain overlay ── */}
+      <div className="absolute inset-0 opacity-[0.025] dark:opacity-[0.06] -z-10 pointer-events-none"
+           style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
 
       {/* ── Nav ── */}
       <nav
-        className="relative z-10 flex items-center px-8 py-6 max-w-3xl mx-auto"
+        className="relative z-10 flex items-center px-8 py-6 max-w-3xl mx-auto w-full"
         style={{
           opacity: mounted ? 1 : 0,
           transform: mounted ? 'translateY(0)' : 'translateY(-8px)',
@@ -206,7 +203,7 @@ const formatSize = (bytes) => {
       >
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-sm text-[#6B6B6B] dark:text-[#888] hover:text-[#1A1A1A] dark:hover:text-[#E8E8E6] transition-colors duration-200 group cursor-pointer"
+          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 dark:text-gray-400 dark:hover:text-white transition-colors duration-200 group cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-200" />
           Back
@@ -215,7 +212,7 @@ const formatSize = (bytes) => {
 
       {/* ── Content ── */}
       <div
-        className="relative z-10 max-w-3xl mx-auto px-8 pb-20 space-y-5"
+        className="relative z-10 max-w-3xl mx-auto w-full px-8 pb-20 space-y-5"
         style={{
           opacity: mounted ? 1 : 0,
           transform: mounted ? 'translateY(0)' : 'translateY(16px)',
@@ -224,7 +221,7 @@ const formatSize = (bytes) => {
       >
 
         {/* ── Thumbnail card ── */}
-        <div className="preview-card-in rounded-2xl overflow-hidden border border-[#E0DDD8] dark:border-[#2A2A28] bg-white dark:bg-[#1A1A18] shadow-sm">
+        <div className="preview-card-in rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.04] backdrop-blur-2xl shadow-xl dark:shadow-black/30">
           {info && !playlist && info.thumbnail ? (
             <div className="aspect-video w-full overflow-hidden">
               <img
@@ -234,85 +231,78 @@ const formatSize = (bytes) => {
               />
             </div>
           ) : (
-            <div className="aspect-video w-full bg-[#F0EDE8] dark:bg-[#1A1A18] flex flex-col items-center justify-center gap-3">
-              <Video className="w-10 h-10 text-[#C8B8A2] dark:text-[#3A3530]" />
-              <span className="text-sm text-[#B0ADA8] dark:text-[#444]">
+            <div className="aspect-video w-full bg-indigo-50/50 dark:bg-indigo-500/[0.04] flex flex-col items-center justify-center gap-3">
+              <Video className="w-10 h-10 text-indigo-300 dark:text-indigo-500/60" />
+              <span className="text-sm text-slate-400 dark:text-gray-500">
                 {playlist ? `Playlist · ${playlist.length} videos` : 'No preview available'}
               </span>
             </div>
           )}
 
-         {/* {info && !playlist && (
-            <div className="px-6 py-4 border-t border-[#E0DDD8] dark:border-[#2A2A28]">
-              <h2 className="font-['Fraunces',_serif] font-bold text-xl leading-snug text-[#1A1A1A] dark:text-[#E8E8E6]">
+          {info && !playlist && (
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-white/[0.08]">
+              <h2 className="font-bold text-xl leading-snug text-slate-900 dark:text-white">
                 {info.title}
               </h2>
-            </div>
-          )} */}
-          {info && !playlist && (
-  <div className="px-6 py-4 border-t border-[#E0DDD8] dark:border-[#2A2A28]">
-    <h2 className="font-['Fraunces',_serif] font-bold text-xl leading-snug text-[#1A1A1A] dark:text-[#E8E8E6]">
-      {info.title}
-    </h2>
 
-    {/* ADD THIS — info pills */}
-    <div className="flex flex-wrap items-center gap-2 mt-3">
-      {info.uploader && (
-        <span className="flex items-center gap-1.5 text-xs text-[#6B6B6B] dark:text-[#888]">
-          <User className="w-3 h-3" />
-          {info.uploader}
-        </span>
-      )}
-      {info.duration && (
-        <>
-          <span className="text-[#E0DDD8] dark:text-[#2A2A28]">·</span>
-          <span className="flex items-center gap-1.5 text-xs text-[#6B6B6B] dark:text-[#888]">
-            <Clock className="w-3 h-3" />
-            {formatDuration(info.duration)}
-          </span>
-        </>
-      )}
-      {info.view_count && (
-        <>
-          <span className="text-[#E0DDD8] dark:text-[#2A2A28]">·</span>
-          <span className="flex items-center gap-1.5 text-xs text-[#6B6B6B] dark:text-[#888]">
-            <Eye className="w-3 h-3" />
-            {formatViews(info.view_count)}
-          </span>
-        </>
-      )}
-      {info.filesize_approx && (
-        <>
-          <span className="text-[#E0DDD8] dark:text-[#2A2A28]">·</span>
-          <span className="flex items-center gap-1.5 text-xs text-[#6B6B6B] dark:text-[#888]">
-            <HardDrive className="w-3 h-3" />
-            ~{formatSize(info.filesize_approx)}
-          </span>
-        </>
-      )}
-    </div>
-  </div>
-)}
+              {/* info pills */}
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                {info.uploader && (
+                  <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-gray-400">
+                    <User className="w-3 h-3" />
+                    {info.uploader}
+                  </span>
+                )}
+                {info.duration && (
+                  <>
+                    <span className="text-slate-300 dark:text-white/20">·</span>
+                    <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-gray-400">
+                      <Clock className="w-3 h-3" />
+                      {formatDuration(info.duration)}
+                    </span>
+                  </>
+                )}
+                {info.view_count && (
+                  <>
+                    <span className="text-slate-300 dark:text-white/20">·</span>
+                    <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-gray-400">
+                      <Eye className="w-3 h-3" />
+                      {formatViews(info.view_count)}
+                    </span>
+                  </>
+                )}
+                {info.filesize_approx && (
+                  <>
+                    <span className="text-slate-300 dark:text-white/20">·</span>
+                    <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-gray-400">
+                      <HardDrive className="w-3 h-3" />
+                      ~{formatSize(info.filesize_approx)}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── Playlist selector ── */}
         {playlist && (
           <div
-            className="preview-card-in rounded-2xl border border-[#E0DDD8] dark:border-[#2A2A28] bg-white dark:bg-[#1A1A18] shadow-sm overflow-hidden"
+            className="preview-card-in rounded-2xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.04] backdrop-blur-2xl shadow-xl dark:shadow-black/30 overflow-hidden"
             style={{ animationDelay: '80ms' }}
           >
-            <div className="px-6 py-4 border-b border-[#E0DDD8] dark:border-[#2A2A28] flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-white/[0.08] flex items-center justify-between">
               <div>
-                <h2 className="font-['Fraunces',_serif] font-bold text-lg text-[#1A1A1A] dark:text-[#E8E8E6]">
+                <h2 className="font-bold text-lg text-slate-900 dark:text-white">
                   Playlist
                 </h2>
-                <p className="text-sm text-[#6B6B6B] dark:text-[#888] mt-0.5">
+                <p className="text-sm text-slate-500 dark:text-gray-400 mt-0.5">
                   {selectedUrls.size} of {playlist.length} selected
                 </p>
               </div>
               <button
                 onClick={toggleAll}
-                className="text-xs font-semibold text-[#1A1A1A] dark:text-[#E8E8E6] bg-[#F0EDE8] dark:bg-[#2A2A28] px-3 py-1.5 rounded-lg hover:bg-[#E8E4DE] dark:hover:bg-[#333] transition-colors duration-200 cursor-pointer"
+                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors duration-200 cursor-pointer"
               >
                 {selectedUrls.size === playlist.length ? 'Deselect all' : 'Select all'}
               </button>
@@ -324,23 +314,23 @@ const formatSize = (bytes) => {
                   <button
                     key={i}
                     onClick={() => toggleUrl(entry.url)}
-                    className={`w-full text-left px-6 py-3.5 flex items-center gap-3 transition-all duration-200 border-b border-[#F0EDE8] dark:border-[#1A1A18] last:border-0 cursor-pointer ${
+                    className={`w-full text-left px-6 py-3.5 flex items-center gap-3 transition-all duration-200 border-b border-slate-100 dark:border-white/[0.04] last:border-0 cursor-pointer ${
                       isSelected
                         ? 'bg-indigo-50 dark:bg-indigo-500/10 border-l-2 border-l-indigo-400 dark:border-l-indigo-500'
-                        : 'hover:bg-[#F8F6F2] dark:hover:bg-[#1F1F1D]'
+                        : 'hover:bg-white/80 dark:hover:bg-white/[0.06]'
                     }`}
                   >
                     <div className={`flex-shrink-0 transition-transform duration-200 ${isSelected ? 'scale-110' : ''}`}>
                       {isSelected
                         ? <CheckSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                        : <Square className="w-4 h-4 text-[#C8B8A2] dark:text-[#3A3530]" />
+                        : <Square className="w-4 h-4 text-slate-300 dark:text-gray-600" />
                       }
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium truncate text-[#1A1A1A] dark:text-[#E8E8E6]">
+                      <div className="text-sm font-medium truncate text-slate-900 dark:text-white">
                         {entry.title}
                       </div>
-                      <div className="text-xs text-[#B0ADA8] dark:text-[#444] mt-0.5 truncate">
+                      <div className="text-xs text-slate-400 dark:text-gray-500 mt-0.5 truncate">
                         {entry.url}
                       </div>
                     </div>
@@ -353,7 +343,7 @@ const formatSize = (bytes) => {
 
         {/* ── Options card ── */}
         <div
-          className="preview-card-in rounded-2xl border border-[#E0DDD8] dark:border-[#2A2A28] bg-white dark:bg-[#1A1A18] shadow-sm divide-y divide-[#F0EDE8] dark:divide-[#2A2A28]"
+          className="preview-card-in rounded-2xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.04] backdrop-blur-2xl shadow-xl dark:shadow-black/30 divide-y divide-slate-100 dark:divide-white/[0.06]"
           style={{ animationDelay: '140ms' }}
         >
 
@@ -409,28 +399,28 @@ const formatSize = (bytes) => {
                   <div
                     onClick={() => setEmbedSubs(!embedSubs)}
                     className={`w-10 h-5 rounded-full transition-colors duration-300 relative flex-shrink-0 cursor-pointer ${
-                      embedSubs ? 'bg-indigo-600 dark:bg-indigo-500' : 'bg-[#E0DDD8] dark:bg-[#2A2A28]'
+                      embedSubs ? 'bg-indigo-600 dark:bg-indigo-500' : 'bg-slate-200 dark:bg-gray-700/60'
                     }`}
                   >
                     <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${
                       embedSubs ? 'translate-x-5' : 'translate-x-0.5'
                     }`} />
                   </div>
-                  <span className="text-sm text-[#1A1A1A] dark:text-[#E8E8E6] select-none">
+                  <span className="text-sm text-slate-700 dark:text-gray-300 select-none">
                     Embed subtitles in video
                   </span>
                 </label>
                 {embedSubs && (
                   <div className="flex items-center gap-3 mt-3 pl-[52px] animate-fade-in">
-                    <span className="text-xs text-[#6B6B6B] dark:text-[#888]">Language</span>
+                    <span className="text-xs text-slate-400 dark:text-gray-500">Language</span>
                     <input
                       type="text"
                       value={subLangs}
                       onChange={(e) => setSubLangs(e.target.value)}
                       placeholder="en"
-                      className="w-20 px-3 py-1.5 bg-[#F5F4F0] dark:bg-[#1A1A18] border border-[#E0DDD8] dark:border-[#2A2A28] rounded-lg text-[#1A1A1A] dark:text-[#E8E8E6] text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all duration-200"
+                      className="w-20 px-3 py-1.5 bg-white/80 dark:bg-gray-900/60 border border-slate-200 dark:border-gray-700/50 rounded-lg text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500/60 transition-all duration-200"
                     />
-                    <span className="text-xs text-[#B0ADA8] dark:text-[#444]">e.g. en, fr, es</span>
+                    <span className="text-xs text-slate-400 dark:text-gray-500">e.g. en, fr, es</span>
                   </div>
                 )}
               </Section>
@@ -496,7 +486,7 @@ const formatSize = (bytes) => {
                     className={inputClass}
                   />
                 </div>
-                <p className="text-xs text-[#B0ADA8] dark:text-[#444] mt-1">
+                <p className="text-xs text-slate-400 dark:text-gray-500 mt-1">
                   Leave blank to download the full video.
                 </p>
               </Section>
@@ -506,7 +496,7 @@ const formatSize = (bytes) => {
 
         {/* ── Error ── */}
         {error && (
-          <div className="flex items-start gap-2 px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl animate-shake">
+          <div className="flex items-start gap-2 px-4 py-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl animate-shake">
             <span className="text-red-500 text-xs mt-0.5">⚠</span>
             <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           </div>
@@ -561,8 +551,6 @@ const formatSize = (bytes) => {
       </div>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap');
-
         @keyframes preview-card-in {
           from { opacity: 0; transform: translateY(14px); }
           to   { opacity: 1; transform: translateY(0); }

@@ -3,7 +3,6 @@ import Home from './pages/Home';
 import Preview from './pages/Preview';
 import Progress from './pages/Progress';
 import BatchProgress from './pages/BatchProgress';
-import Library from './pages/Library';
 import ThemeToggle from './components/ThemeToggle';
 import { useTheme } from './context/ThemeContext';
 
@@ -18,7 +17,6 @@ function App() {
         <Route path="/preview" element={<Preview />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/batch-progress" element={<BatchProgress />} /> 
-        <Route path="/library" element={<Library />} />
       </Routes>
     </div>
   );

@@ -33,19 +33,6 @@ struct Job {
     thumbnail: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
-struct HistoryEntry {
-    id: Uuid,
-    job_id: String,
-    user_id: String,
-    url: String,
-    title: Option<String>,
-    format: String,
-    quality: Option<String>,
-    file_path: Option<String>,
-    thumbnail: Option<String>,
-    downloaded_at: chrono::DateTime<chrono::Utc>,
-}
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -528,23 +515,7 @@ if let Err(ref e) = insert_result {
                     .execute(&db)
                     .await;
 
-                    // Save to downloads history
-                    let history_id = Uuid::new_v4();
-                    let _ = sqlx::query(
-                        "INSERT INTO downloads (id, job_id, user_id, url, title, format, quality, file_path, thumbnail)
-                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-                    )
-                    .bind(history_id)
-                    .bind(&j.id)
-                    .bind(&user_id)
-                    .bind(j.url.as_deref().unwrap_or(""))
-                    .bind(j.title.as_deref().unwrap_or("Unknown"))
-                    .bind(j.format.as_deref().unwrap_or(&format))
-                    .bind(j.quality.as_deref())
-                    .bind(j.filename.as_deref())
-                    .bind(j.thumbnail.as_deref())
-                    .execute(&db)
-                    .await;
+                    
 
                 } else {
                     j.status = JobStatus::Failed;
@@ -703,118 +674,7 @@ async fn download_file(
     }
 }
 
-async fn list_history(
-    State(state): State<Arc<AppState>>,
-    headers: HeaderMap,
-    Query(params): Query<HashMap<String, String>>,
-) -> Result<Json<Vec<HistoryEntry>>, StatusCode> {
-    let user_id = extract_user_id(&headers)?;
-    let search = params.get("q").cloned().unwrap_or_default();
 
-    let entries = if search.is_empty() {
-        sqlx::query_as::<_, HistoryEntry>(
-            "SELECT id, job_id, user_id, url, title, format, quality, file_path, thumbnail, downloaded_at
-             FROM downloads WHERE user_id = $1 ORDER BY downloaded_at DESC LIMIT 100"
-        )
-        .bind(&user_id)
-        .fetch_all(&state.db)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-    } else {
-        let like = format!("%{}%", search);
-        sqlx::query_as::<_, HistoryEntry>(
-            "SELECT id, job_id, user_id, url, title, format, quality, file_path, thumbnail, downloaded_at
-             FROM downloads WHERE user_id = $1 AND (title ILIKE $2 OR url ILIKE $2) ORDER BY downloaded_at DESC LIMIT 100"
-        )
-        .bind(&user_id)
-        .bind(&like)
-        .fetch_all(&state.db)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-    };
-
-    Ok(Json(entries))
-}
-#[axum::debug_handler]
-async fn delete_history(
-    State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,        // ← Path FIRST
-    headers: HeaderMap,           // ← HeaderMap SECOND
-) -> Result<StatusCode, StatusCode> {
-    let user_id = extract_user_id(&headers)?;
-
-    // Get file path to delete from disk
-    let row: Option<(Option<String>,)> = sqlx::query_as(
-        "SELECT file_path FROM downloads WHERE id = $1 AND user_id = $2"
-    )
-    .bind(id)
-    .bind(&user_id)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    if let Some((Some(file_path),)) = row {
-        let _ = tokio::fs::remove_file(&file_path).await;
-    }
-
-    let result = sqlx::query("DELETE FROM downloads WHERE id = $1 AND user_id = $2")
-        .bind(id)
-        .bind(&user_id)
-        .execute(&state.db)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    if result.rows_affected() == 0 {
-        return Err(StatusCode::NOT_FOUND);
-    }
-    Ok(StatusCode::NO_CONTENT)
-}
-#[axum::debug_handler]
-async fn download_again(
-    State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
-    headers: HeaderMap,
-    Query(params): Query<HashMap<String, String>>,
-) -> Result<impl IntoResponse, StatusCode> {
-    let user_id = extract_user_id(&headers)
-        .or_else(|_| params.get("user_id").cloned().ok_or(StatusCode::UNAUTHORIZED))?;
-
-    let entry: HistoryEntry = sqlx::query_as(
-        "SELECT id, job_id, user_id, url, title, format, quality, file_path, thumbnail, downloaded_at
-         FROM downloads WHERE id = $1 AND user_id = $2"
-    )
-    .bind(id)
-    .bind(&user_id)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-    .ok_or(StatusCode::NOT_FOUND)?;
-
-    let file_path = entry.file_path.ok_or(StatusCode::NOT_FOUND)?;
-    let path = PathBuf::from(&file_path);
-    if !path.exists() {
-        return Err(StatusCode::NOT_FOUND);
-    }
-
-    let data = tokio::fs::read(&path)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let mime = mime_guess::from_path(&path).first_or_octet_stream();
-    let disposition = format!(
-        "attachment; filename=\"{}\"",
-        //sanitize_filename(entry.title.as_deref().unwrap_or("download")
-        PathBuf::from(&file_path)
-    .file_name()
-    .map(|n| n.to_string_lossy().to_string())
-    .unwrap_or_else(|| "download".to_string())
-        );
-    
-    let headers = [
-        (header::CONTENT_TYPE, mime.as_ref().to_string()),
-        (header::CONTENT_DISPOSITION, disposition),
-    ];
-    Ok((headers, data))
-}
 
 async fn create_share(
     State(state): State<Arc<AppState>>,
@@ -959,25 +819,6 @@ async fn main() {
         .await
         .expect("Failed to create PostgreSQL pool");
 
-    // Create table if not exists
-    sqlx::query(
-        "CREATE TABLE IF NOT EXISTS downloads (
-            id UUID PRIMARY KEY,
-            job_id TEXT UNIQUE NOT NULL,
-            user_id TEXT NOT NULL,
-            url TEXT NOT NULL,
-            title TEXT,
-            format TEXT NOT NULL,
-            quality TEXT,
-            file_path TEXT,
-            thumbnail TEXT,
-            downloaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        )"
-    )
-    .execute(&pool)
-    .await
-    .expect("Failed to create downloads table");
-
     sqlx::query(
     "CREATE TABLE IF NOT EXISTS shares (
         id UUID PRIMARY KEY,
@@ -1011,6 +852,33 @@ sqlx::query(
 .await
 .expect("Failed to create jobs table");
 println!("Jobs table ready"); 
+// Spawn background cleanup task
+tokio::spawn(async {
+    loop {
+        // Run cleanup every hour
+        tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
+        
+        let cutoff = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs() - (24 * 3600); // delete files older than 24 hours
+
+        if let Ok(mut entries) = tokio::fs::read_dir(output_dir()).await {
+            while let Ok(Some(entry)) = entries.next_entry().await {
+                if let Ok(metadata) = entry.metadata().await {
+                    if let Ok(modified) = metadata.modified() {
+                        if let Ok(age) = modified.duration_since(std::time::UNIX_EPOCH) {
+                            if age.as_secs() < cutoff {
+                                let _ = tokio::fs::remove_file(entry.path()).await;
+                                eprintln!("Cleaned up: {:?}", entry.file_name());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+});
     let state = Arc::new(AppState {
         jobs: Arc::new(RwLock::new(HashMap::new())),
         db: pool,
@@ -1021,9 +889,6 @@ println!("Jobs table ready");
         .route("/download", post(download))
         .route("/status/:job_id", get(job_status))
         .route("/file/:job_id", get(download_file))
-        .route("/history", get(list_history))
-        .route("/history/:id", delete(delete_history))
-        .route("/download-again/:id", get(download_again))
         .route("/share", post(create_share))
 .route("/share/:token", get(serve_share))
         .layer(CorsLayer::permissive())
