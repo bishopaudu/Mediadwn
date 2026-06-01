@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { getUserId } from '../helper/userID';
 import API_BASE from '../config';
+import posthog from 'posthog-js'  
+
 
 const Section = ({ label, icon: Icon, children }) => (
   <div className="space-y-3">
@@ -159,6 +161,11 @@ const formatSize = (bytes) => {
       });
       if (!res.ok) throw new Error((await res.text()) || 'Download failed');
       const { job_id } = await res.json();
+      posthog.capture('download_started', {
+  format,
+  quality: format === 'mp4' ? quality : undefined,
+  embed_subs: embedSubs,
+})
       navigate(`/progress?job_id=${job_id}&title=${encodeURIComponent(info.title || '')}&format=${format}`);
     } catch (err) {
       setError(err.message);

@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { getUserId } from '../helper/userID';
 import API_BASE from '../config';
+import posthog from 'posthog-js'  // ← ADD THIS
+
 
 const STATUS_CONFIG = {
   pending: {
@@ -75,6 +77,10 @@ export default function Progress() {
         setProgress(data.progress);
         if (data.error) setError(data.error);
         if (data.status === 'done' || data.status === 'failed') {
+            posthog.capture('download_completed', {
+    format,
+    duration_seconds: elapsed,
+  })
           clearInterval(interval);
           clearInterval(timer);
         }

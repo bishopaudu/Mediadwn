@@ -167,11 +167,6 @@ async fn analyze(
         return Err((StatusCode::BAD_REQUEST, "URL is required".into()));
     }
     
-   /*  let output = tokio::process::Command::new("yt-dlp")
-        .args(["-J", "--flat-playlist", &url])
-        .output()
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;*/
     let mut cmd = tokio::process::Command::new("yt-dlp");
 if std::path::Path::new("/app/cookies.txt").exists() {
     cmd.args(["--cookies", "/app/cookies.txt"]);
@@ -181,10 +176,6 @@ let output = cmd
     .output()
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-   /*  if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err((StatusCode::BAD_REQUEST, format!("yt-dlp error: {}", stderr)));
-    }*/
     if !output.status.success() {
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
         eprintln!("yt-dlp stderr: {}", stderr);
@@ -261,12 +252,8 @@ let output = cmd
 
 async fn download(
     State(state): State<Arc<AppState>>,
-    headers: HeaderMap,
     Json(payload): Json<DownloadRequest>,
 ) -> Result<Json<DownloadResponse>, (StatusCode, String)> {
-    let user_id = extract_user_id(&headers).map_err(|_| {
-        (StatusCode::UNAUTHORIZED, "Missing X-User-ID header".to_string())
-    })?;
 
     let url = payload.url.trim().to_string();
     let format = payload.format.to_lowercase();
@@ -614,21 +601,6 @@ async fn job_status(
     }
 }
 
-/*async fn job_status(
-    State(state): State<Arc<AppState>>,
-    Path(job_id): Path<String>,
-) -> Result<Json<StatusResponse>, StatusCode> {
-    let map = state.jobs.read().await;
-    if let Some(job) = map.get(&job_id) {
-        Ok(Json(StatusResponse {
-            status: format!("{:?}", job.status).to_lowercase(),
-            progress: job.progress,
-            error: job.error.clone(),
-        }))
-    } else {
-        Err(StatusCode::NOT_FOUND)
-    }
-}*/
 
 async fn download_file(
     State(state): State<Arc<AppState>>,
@@ -673,7 +645,6 @@ async fn download_file(
         None => Err(StatusCode::NOT_FOUND),
     }
 }
-
 
 async fn create_share(
     State(state): State<Arc<AppState>>,
@@ -833,10 +804,6 @@ async fn main() {
         println!("YouTube cookies loaded");
     }
     ensure_output_dir().await;
-
-    // Connect to PostgreSQL
-   // let database_url = std::env::var("DATABASE_URL_HOSTED")
-      //  .unwrap_or_else(|_| data_base_hosted.to_string());
       let database_url =
         std::env::var("DATABASE_URL")
             .expect("DATABASE_URL must be set");
@@ -926,12 +893,7 @@ let port = std::env::var("PORT").unwrap_or_else(|_| "4000".to_string());
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))
         .await
         .unwrap();
-    
         println!("Backend listening on http://0.0.0.0:{}", port);
-
-
-   // let listener = tokio::net::TcpListener::bind("0.0.0.0:4000").await.unwrap();
-    //println!("Backend listening on http://0.0.0.0:4000");
     axum::serve(listener, app).await.unwrap();
 }
 
