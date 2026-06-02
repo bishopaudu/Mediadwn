@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Loader2, ArrowRight, Film, Music, Zap, Shield, BookOpen, Sparkles, ChevronDown } from 'lucide-react';
 import API_BASE from '../config';
 import InfoModal from '../components/InfoModal';
+import posthog from 'posthog-js';
 
 const features = [
   { icon: Film,     label: 'MP4 Video',    sub: 'Up to 1080p' },
@@ -194,6 +195,14 @@ export default function Home() {
         throw new Error(text || 'Analysis failed');
       }
       const data = await res.json();
+      const isPlaylist = Array.isArray(data);
+      posthog.capture('analysis_completed', {
+        media_type: isPlaylist ? 'playlist' : 'single',
+        playlist_count: isPlaylist ? data.length : undefined,
+        uploader: !isPlaylist ? (data.uploader ?? undefined) : undefined,
+        duration_seconds: !isPlaylist ? (data.duration ?? undefined) : undefined,
+        view_count: !isPlaylist ? (data.view_count ?? undefined) : undefined,
+      });
       navigate('/preview', { state: { data, url } });
     } catch (err) {
       setError(err.message);

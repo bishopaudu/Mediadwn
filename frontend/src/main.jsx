@@ -11,7 +11,11 @@ posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
     api_host: 'https://us.i.posthog.com',
     defaults: '2026-01-30'
 })
-console.log('PostHog key:', import.meta.env.VITE_POSTHOG_KEY)
+
+posthog.capture('site_opened', {
+    referrer: document.referrer || undefined,
+    url: window.location.href,
+})
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
