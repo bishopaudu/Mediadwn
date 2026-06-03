@@ -172,6 +172,8 @@ if std::path::Path::new("/app/cookies.txt").exists() {
     cmd.args(["--cookies", "/app/cookies.txt"]);
 }
 cmd.args(["-J", "--flat-playlist", &url]);
+cmd.arg("--impersonate");
+cmd.arg("chrome-110");
 let output = cmd
     .output()
     .await
@@ -361,8 +363,8 @@ if let Err(ref e) = insert_result {
         if std::path::Path::new("/app/cookies.txt").exists() {
             cmd.args(["--cookies", "/app/cookies.txt"]);
         }
-        cmd.args(["--impersonate", "chrome"]);
-
+cmd.arg("--impersonate");
+cmd.arg("chrome-110");
         match format.as_str() {
             "mp3" => {
                 cmd.args(["--extract-audio", "--audio-format", "mp3", "--audio-quality", "0"]);
