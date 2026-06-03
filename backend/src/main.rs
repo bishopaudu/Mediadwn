@@ -361,6 +361,7 @@ if let Err(ref e) = insert_result {
         if std::path::Path::new("/app/cookies.txt").exists() {
             cmd.args(["--cookies", "/app/cookies.txt"]);
         }
+        cmd.args(["--impersonate", "chrome"]);
 
         match format.as_str() {
             "mp3" => {

@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y \
     && chmod +x /usr/local/bin/yt-dlp \
     && curl -fsSL https://deno.land/install.sh | sh \
     && mv /root/.deno/bin/deno /usr/local/bin/deno \
+    && pip3 install --break-system-packages curl-cffi \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/target/release/mediadwn-backend .
