@@ -1,0 +1,79 @@
+# mediadwn — Full Documentation
+
+## Overview
+
+mediadwn (mediadwn.xyz) is a free web-based video downloader 
+built on top of yt-dlp. It provides a clean, ad-free interface 
+for downloading videos from over 1000 websites including YouTube, 
+Twitter/X, TikTok, Vimeo, SoundCloud and Dailymotion.
+
+No account is required. No ads are shown. The service is 
+completely free to use.
+
+## Features
+
+### Download formats
+- MP4 video at 360p, 720p or 1080p quality
+- MP3 audio extraction from any video
+
+### Playlist support
+- Detect YouTube playlists automatically
+- Select individual videos from a playlist
+- Batch download multiple videos at once
+
+### Video options
+- Trim video to specific start and end timestamps
+- Embed subtitles into MP4 files
+- Custom filename before downloading
+- Speed limit control for slower connections
+
+### Sharing
+- Generate shareable download links
+- Links expire after 24 hours
+- No account needed to access shared links
+
+## Supported sites
+
+mediadwn supports all sites that yt-dlp supports including:
+YouTube, YouTube Shorts, YouTube Music, Twitter/X, TikTok,
+Vimeo, SoundCloud, Dailymotion, Twitch clips, Reddit videos,
+BBC iPlayer, and 1000+ more.
+
+Sites not supported: Netflix, Spotify, Apple Music, Disney+ 
+and other DRM-protected streaming services.
+
+## Privacy
+
+- No user accounts or registration required
+- No personal data collected
+- Downloads are deleted from the server after 24 hours
+- A random anonymous user ID is stored in the browser 
+  for session continuity only
+
+## Frequently asked questions
+
+Q: Is mediadwn free?
+A: Yes, completely free with no hidden costs or limits.
+
+Q: Do I need an account?
+A: No account is required.
+
+Q: How long are files stored?
+A: Files are automatically deleted after 24 hours.
+
+Q: Can I download TikTok videos without watermarks?
+A: Yes, mediadwn downloads the watermark-free version when available.
+
+Q: What is the maximum quality available?
+A: Up to 1080p for MP4 video downloads.
+
+Q: Can I download entire YouTube playlists?
+A: Yes, paste a playlist URL and select which videos to download.
+
+Q: Is there a file size limit?
+A: No explicit limit, but very long videos may take several minutes.
+
+## Contact and links
+
+- Website: https://mediadwn.xyz
+- Sitemap: https://mediadwn.xyz/sitemap.xml

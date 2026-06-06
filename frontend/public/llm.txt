@@ -1,0 +1,40 @@
+# mediadwn
+
+> A free, clean web interface for downloading videos from YouTube, TikTok, Twitter, Vimeo and 1000+ other sites. No ads, no account required.
+
+## What it does
+
+- Download videos as MP4 (360p, 720p, 1080p) or extract audio as MP3
+- Supports playlists — select individual videos or batch download entire playlists
+- Trim videos to exact start and end timestamps before downloading
+- Embed subtitles directly into MP4 files
+- Generate shareable download links valid for 24 hours
+- Works on YouTube, Twitter/X, TikTok, Vimeo, SoundCloud and 1000+ sites
+
+## Who it is for
+
+- People in areas with slow or unreliable internet who need videos offline
+- Anyone who wants to save videos for travel, presentations or offline viewing
+- Content creators who need to archive videos
+- People who want MP3 audio extracted from YouTube videos or podcasts
+
+## How to use it
+
+1. Go to mediadwn.xyz
+2. Paste any video or playlist URL
+3. Click Analyze
+4. Choose format (MP4 or MP3) and quality
+5. Click Download
+
+## Technical details
+
+- Backend: Rust (Axum framework)
+- Frontend: React + Vite + Tailwind CSS
+- Downloader: yt-dlp + ffmpeg
+- Database: PostgreSQL
+- Hosted on Railway (backend) and Render (frontend)
+
+## Links
+
+- Website: https://mediadwn.xyz
+- Sitemap: https://mediadwn.xyz/sitemap.xml
