@@ -85,9 +85,8 @@ export default function Progress() {
           clearInterval(timer);
         }
       } catch (e) {
-        //setError(e.message);
-        console.error('Error fetching job status:', e.message);
-      setError('Oops! something went wrong. Please try again later.');
+        console.error('Error fetching job status:', e); // full error logged for debugging
+        setError('Oops! Something went wrong. Please try again later.');
         clearInterval(interval);
         clearInterval(timer);
       }
@@ -341,7 +340,7 @@ export default function Progress() {
                 <div className="flex items-start gap-2 px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl animate-shake">
                   <span className="text-red-500 text-xs mt-0.5">⚠</span>
                   <p className="text-sm text-red-600 dark:text-red-400">
-                    {error || 'Something went wrong during processing.'}
+                    Oops! Something went wrong. Please try again later.
                   </p>
                 </div>
                 <button
