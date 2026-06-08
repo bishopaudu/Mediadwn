@@ -2,11 +2,11 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import {
   Download, CheckCircle2, XCircle, Loader2,
-  ArrowLeft, Share2, Copy, Check, Clock
+  ArrowLeft, Check, Clock
 } from 'lucide-react';
 import { getUserId } from '../helper/userID';
 import API_BASE from '../config';
-import posthog from 'posthog-js'  // ← ADD THIS
+import posthog from 'posthog-js'  
 
 
 const STATUS_CONFIG = {
@@ -50,10 +50,10 @@ export default function Progress() {
   const [status, setStatus]           = useState('pending');
   const [progress, setProgress]       = useState(0);
   const [error, setError]             = useState('');
-  const [shareLink, setShareLink]     = useState('');
-  const [showShare, setShowShare]     = useState(false);
-  const [shareLoading, setShareLoading] = useState(false);
-  const [copied, setCopied]           = useState(false);
+ // const [shareLink, setShareLink]     = useState('');
+  //const [showShare, setShowShare]     = useState(false);
+ // const [shareLoading, setShareLoading] = useState(false);
+//  const [copied, setCopied]           = useState(false);
   const [mounted, setMounted]         = useState(false);
   const [elapsed, setElapsed]         = useState(0);
   const [isDark, setIsDark]           = useState(false);
@@ -94,7 +94,7 @@ export default function Progress() {
     return () => { clearInterval(interval); clearInterval(timer); };
   }, [job_id, navigate]);
 
-  const handleShare = async () => {
+  /*const handleShare = async () => {
     setShareLoading(true);
     try {
       const userId = getUserId();
@@ -118,7 +118,7 @@ export default function Progress() {
     navigator.clipboard.writeText(shareLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
+  };*/
 
   const formatElapsed = (s) => {
     if (s < 60) return `${s}s`;
@@ -297,7 +297,7 @@ export default function Progress() {
                   </span>
                 </a>
 
-                {/* Share */}
+                {/* 
                 {!showShare ? (
                   <button
                     onClick={handleShare}
@@ -330,9 +330,9 @@ export default function Progress() {
                       </button>
                     </div>
                   </div>
-                )}
+                )} */}
               </>
-            )}
+            )} 
 
             {status === 'failed' && (
               <>

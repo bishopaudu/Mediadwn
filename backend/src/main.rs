@@ -1,8 +1,8 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Path, State},
     http::{header, HeaderMap, StatusCode},
     response::{IntoResponse, Json},
-    routing::{delete, get, post},
+    routing::{get, post},
     Router,
 };
 //use futures::TryStreamExt;
@@ -17,7 +17,6 @@ use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 use rand::Rng;
 use dotenvy::dotenv;
-// ---------- Data types ----------
 
 #[derive(Clone, Debug, Serialize)]
 struct Job {
@@ -98,7 +97,7 @@ struct StatusResponse {
     error: Option<String>,
 }
 
-#[derive(Deserialize)]
+/*#[derive(Deserialize)]
 struct ShareRequest {
     job_id: String,
     password: Option<String>,
@@ -118,7 +117,7 @@ struct ShareRecord {
     token: String,
     password: Option<String>,
     expires_at: Option<chrono::DateTime<chrono::Utc>>,
-}
+}*/
 
 struct AppState {
     jobs: Arc<RwLock<HashMap<String, Job>>>,
@@ -234,7 +233,6 @@ let output = cmd
     } else {
         let title = json["title"].as_str().unwrap_or("Unknown").to_string();
         let thumbnail = json["thumbnail"].as_str().unwrap_or("").to_string();
-        // ADD THESE
     let duration = json["duration"].as_f64();
     let view_count = json["view_count"].as_i64();
     let uploader = json["uploader"].as_str().map(|s| s.to_string());
@@ -305,7 +303,6 @@ let insert_result = sqlx::query(
 .execute(&state.db)
 .await;
 
-// ADD THIS
 eprintln!("Job DB insert result: {:?}", insert_result.is_ok());
 if let Err(ref e) = insert_result {
     eprintln!("Job insert error: {}", e);
@@ -494,7 +491,6 @@ if let Err(ref e) = insert_result {
                     j.progress = 100;
                     j.filename = Some(file_path.to_string_lossy().into_owned());
 
-                    // ✅ CHANGE 3 — update DB to done
                     let _ = sqlx::query(
                         "UPDATE jobs SET status = 'done', progress = 100, filename = $2 WHERE id = $1"
                     )
@@ -509,7 +505,6 @@ if let Err(ref e) = insert_result {
                     j.status = JobStatus::Failed;
                     j.error = Some("Output file not found after download".into());
 
-                    // ✅ CHANGE 4 — update DB when file not found
                     let _ = sqlx::query(
                         "UPDATE jobs SET status = 'failed', error = $2 WHERE id = $1"
                     )
@@ -532,7 +527,6 @@ if let Err(ref e) = insert_result {
                 j.status = JobStatus::Failed;
                 j.error = Some(error_msg.clone());
 
-                // ✅ CHANGE 5 — update DB when yt-dlp fails
                 let _ = sqlx::query(
                     "UPDATE jobs SET status = 'failed', error = $2 WHERE id = $1"
                 )
@@ -546,7 +540,6 @@ if let Err(ref e) = insert_result {
                 j.status = JobStatus::Failed;
                 j.error = Some(e.to_string());
 
-                // ✅ CHANGE 6 — update DB when command fails
                 let error_str = e.to_string();
                 let _ = sqlx::query(
                     "UPDATE jobs SET status = 'failed', error = $2 WHERE id = $1"
@@ -647,7 +640,7 @@ async fn download_file(
     }
 }
 
-async fn create_share(
+/*async fn create_share(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,
     Json(payload): Json<ShareRequest>,
@@ -793,9 +786,8 @@ async fn serve_share(
         (header::CONTENT_DISPOSITION, disposition),
     ];
     Ok((headers, data))
-}
+}*/
 
-// ---------- Main ----------
 
 #[tokio::main]
 async fn main() {
@@ -852,13 +844,13 @@ println!("Jobs table ready");
 // Spawn background cleanup task
 tokio::spawn(async {
     loop {
-        // Run cleanup every hour
-        tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
+        // Run cleanup every 10 minutes
+        tokio::time::sleep(tokio::time::Duration::from_secs(600)).await;
         
         let cutoff = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
-            .as_secs() - (24 * 3600); // delete files older than 24 hours
+            .as_secs() - (1800); // delete files older than 30 minutes
 
         if let Ok(mut entries) = tokio::fs::read_dir(output_dir()).await {
             while let Ok(Some(entry)) = entries.next_entry().await {
@@ -886,8 +878,8 @@ tokio::spawn(async {
         .route("/download", post(download))
         .route("/status/:job_id", get(job_status))
         .route("/file/:job_id", get(download_file))
-        .route("/share", post(create_share))
-.route("/share/:token", get(serve_share))
+       // .route("/share", post(create_share))
+      //  .route("/share/:token", get(serve_share))
         .layer(CorsLayer::permissive())
         .with_state(state);
 let port = std::env::var("PORT").unwrap_or_else(|_| "4000".to_string());
