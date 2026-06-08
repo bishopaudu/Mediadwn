@@ -85,7 +85,9 @@ export default function Progress() {
           clearInterval(timer);
         }
       } catch (e) {
-        setError(e.message);
+        //setError(e.message);
+        console.error('Error fetching job status:', e.message);
+      setError('Oops! something went wrong. Please try again later.');
         clearInterval(interval);
         clearInterval(timer);
       }
