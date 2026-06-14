@@ -176,7 +176,7 @@ let output = cmd
     .output()
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    if !output.status.success() {
+    /*if !output.status.success() {
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
         eprintln!("yt-dlp stderr: {}", stderr);
 
@@ -200,6 +200,40 @@ let output = cmd
         "Failed to analyze this URL. Please check the link and try again.".to_string()
     };
     
+    return Err((StatusCode::BAD_REQUEST, user_message));
+}*/
+if !output.status.success() {
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    eprintln!("yt-dlp stderr: {}", stderr);
+
+    let user_message = if stderr.contains("No module named expat") {
+        "Instagram and Facebook downloads are currently unavailable due to a known issue. Please try YouTube, Twitter, TikTok, or other supported sites.".to_string()
+    } else if stderr.contains("not made this video available in your country")
+        || stderr.contains("geo-restricted")
+        || stderr.contains("not available in your country") {
+        // ← ADD THIS BLOCK
+        "This video is geo-restricted and not available in the region where our servers are located. Unfortunately we cannot download this video.".to_string()
+    } else if stderr.contains("This video is not available") {
+        "This video is not available or has been removed.".to_string()
+    } else if stderr.contains("Private video") {
+        "This video is private and cannot be downloaded.".to_string()
+    } else if stderr.contains("Sign in to confirm your age") {
+        "This video requires age verification and cannot be downloaded.".to_string()
+    } else if stderr.contains("Sign in to confirm you're not a bot")
+        || stderr.contains("Sign in to confirm") {
+        "YouTube is requesting verification. Please try again in a few minutes.".to_string()
+    } else if stderr.contains("Premieres in") {
+        "This video has not premiered yet. Please try again later.".to_string()
+    } else if stderr.contains("This live event will begin in")
+        || stderr.contains("is not currently available") {
+        "This live stream has not started yet.".to_string()
+    } else if stderr.contains("Unable to extract")
+        || stderr.contains("Unsupported URL") {
+        "This URL is not supported. Please try a different video link.".to_string()
+    } else {
+        "Failed to analyze this URL. Please check the link and try again.".to_string()
+    };
+
     return Err((StatusCode::BAD_REQUEST, user_message));
 }
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -416,6 +450,22 @@ if let Err(ref e) = insert_result {
 
         match result {
             Ok(output) if output.status.success() => {
+                let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    let error_msg = if stderr.contains("No module named expat")
+        || stderr.contains("CURRENTLY BROKEN")
+    {
+        "Instagram and Facebook downloads are currently not supported.".to_string()
+    } else if stderr.contains("not made this video available in your country")
+        || stderr.contains("not available in your country") {
+        // ← ADD THIS
+        "This video is geo-restricted and cannot be downloaded from our servers.".to_string()
+    } else if stderr.contains("Sign in to confirm") {
+        "YouTube verification required. Please try again in a few minutes.".to_string()
+    } else {
+        format!("yt-dlp failed: {}", stderr)
+    };
+    j.status = JobStatus::Failed;
+    j.error = Some(error_msg);
                 let stdout = String::from_utf8_lossy(&output.stdout);
 
                 let printed_path = stdout
