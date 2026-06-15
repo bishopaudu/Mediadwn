@@ -368,7 +368,33 @@ async fn download(
             "mp3" => {
                 cmd.args(["--extract-audio", "--audio-format", "mp3", "--audio-quality", "0"]);
             }
-            "mp4" => {
+            // In download function, replace the mp4 format block with this:
+"mp4" => {
+    let height: u32 = match quality.as_str() {
+        "360p" => 360,
+        "720p" => 720,
+        "1080p" => 1080,
+        _ => 720,
+    };
+
+    let is_tiktok = url.contains("tiktok.com");
+
+    if is_tiktok {
+        // TikTok uses a simpler format — just get best available
+        cmd.args([
+            "-f", "best",
+            "--merge-output-format", "mp4",
+        ]);
+    } else {
+        // YouTube and others support bestvideo+bestaudio
+        cmd.args([
+            "-f",
+            &format!("bestvideo[height<={0}][vcodec^=avc]+bestaudio/bestvideo[height<={0}]+bestaudio/best[height<={0}]", height),
+            "--merge-output-format", "mp4",
+        ]);
+    }
+}
+            /*"mp4" => {
                 let height: u32 = match quality.as_str() {
                     "360p" => 360,
                     "720p" => 720,
@@ -381,7 +407,7 @@ async fn download(
                     "--merge-output-format",
                     "mp4",
                 ]);
-            }
+            }*/
             _ => unreachable!(),
         }
 
@@ -532,8 +558,12 @@ async fn download(
                 } else if stderr.contains("Bad guest token")
                     || stderr.contains("Error(s) while querying API")
                 {
+
                     "Twitter/X downloads are currently unavailable. Please try again later.".to_string()
-                } else {
+                } else if stderr.contains("Requested format is not available") {
+    "The requested quality is not available for this video. Try a different quality setting.".to_string()
+} 
+                else {
                     format!("yt-dlp failed: {}", stderr)
                 };
 
