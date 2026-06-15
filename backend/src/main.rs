@@ -168,11 +168,11 @@ async fn analyze(
     
     let mut cmd = tokio::process::Command::new("yt-dlp");
     let is_twitter = url.contains("twitter.com") || url.contains("x.com");
-let is_youtube = url.contains("youtube.com") || url.contains("youtu.be");
+//let is_youtube = url.contains("youtube.com") || url.contains("youtu.be");
 
 if is_twitter && std::path::Path::new("/app/twitter-cookies.txt").exists() {
     cmd.args(["--cookies", "/app/twitter-cookies.txt"]);
-} else if std::path::Path::new("/app/cookies.txt").exists() {
+} else if  std::path::Path::new("/app/cookies.txt").exists() {
     cmd.args(["--cookies", "/app/cookies.txt"]);
 }
 //if std::path::Path::new("/app/cookies.txt").exists() {
@@ -298,7 +298,7 @@ async fn download(
 
     state.jobs.write().await.insert(job_id.clone(), job);
 
-  /*   sqlx::query(
+    let insert_result = sqlx::query(
         "INSERT INTO jobs (id, status, progress, url, format, quality)
          VALUES ($1, 'pending', 0, $2, $3, $4)"
     )
@@ -307,24 +307,12 @@ async fn download(
     .bind(&format)
     .bind(&quality)
     .execute(&state.db)
-    .await
-    .ok();*/
-let insert_result = sqlx::query(
-    "INSERT INTO jobs (id, status, progress, url, format, quality)
-     VALUES ($1, 'pending', 0, $2, $3, $4)"
-)
-.bind(&job_id)
-.bind(&url)
-.bind(&format)
-.bind(&quality)
-.execute(&state.db)
-.await;
+    .await;
 
-eprintln!("Job DB insert result: {:?}", insert_result.is_ok());
-if let Err(ref e) = insert_result {
-    eprintln!("Job insert error: {}", e);
-}
-
+    eprintln!("Job DB insert result: {:?}", insert_result.is_ok());
+    if let Err(ref e) = insert_result {
+        eprintln!("Job insert error: {}", e);
+    }
 
     let jobs = state.jobs.clone();
     let db = state.db.clone();
@@ -334,13 +322,11 @@ if let Err(ref e) = insert_result {
     let speed_limit = payload.speed_limit.clone();
     let start_time = payload.start_time.clone();
     let end_time = payload.end_time.clone();
-
     let write_subs = payload.write_subs;
     let embed_subs = payload.embed_subs;
     let sub_langs = payload.sub_langs.clone();
 
     tokio::spawn(async move {
-        // Update to Processing
         {
             let mut map = jobs.write().await;
             if let Some(j) = map.get_mut(&jid) {
@@ -356,7 +342,6 @@ if let Err(ref e) = insert_result {
         .execute(&db)
         .await;
 
-        // Determine output template
         let filename_prefix = if let Some(ref custom) = custom_filename {
             sanitize_filename(custom)
         } else {
@@ -367,22 +352,17 @@ if let Err(ref e) = insert_result {
             .to_string_lossy()
             .to_string();
 
-        // Build yt-dlp command
         let mut cmd = tokio::process::Command::new("yt-dlp");
         cmd.arg("-o").arg(&output_template).arg(&url);
         cmd.arg("--no-simulate");
         cmd.arg("--print").arg("after_move:filepath");
 
-        //if std::path::Path::new("/app/cookies.txt").exists() {
-          //  cmd.args(["--cookies", "/app/cookies.txt"]);
-        //}
         let is_twitter = url.contains("twitter.com") || url.contains("x.com");
-
-if is_twitter && std::path::Path::new("/app/twitter-cookies.txt").exists() {
-    cmd.args(["--cookies", "/app/twitter-cookies.txt"]);
-} else if std::path::Path::new("/app/cookies.txt").exists() {
-    cmd.args(["--cookies", "/app/cookies.txt"]);
-}
+        if is_twitter && std::path::Path::new("/app/twitter-cookies.txt").exists() {
+            cmd.args(["--cookies", "/app/twitter-cookies.txt"]);
+        } else if std::path::Path::new("/app/cookies.txt").exists() {
+            cmd.args(["--cookies", "/app/cookies.txt"]);
+        }
 
         match format.as_str() {
             "mp3" => {
@@ -405,14 +385,12 @@ if is_twitter && std::path::Path::new("/app/twitter-cookies.txt").exists() {
             _ => unreachable!(),
         }
 
-        // Speed limit
         if let Some(ref limit) = speed_limit {
             if limit != "unlimited" {
                 cmd.args(["--limit-rate", limit]);
             }
         }
 
-        // Subtitle options
         if format == "mp4" {
             if embed_subs.unwrap_or(false) {
                 cmd.args(["--write-subs", "--embed-subs"]);
@@ -439,23 +417,9 @@ if is_twitter && std::path::Path::new("/app/twitter-cookies.txt").exists() {
         };
 
         match result {
+            // ✅ CHANGE 1 — success arm now starts directly with stdout
+            // The misplaced error block that was here before is REMOVED
             Ok(output) if output.status.success() => {
-                let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-    let error_msg = if stderr.contains("No module named expat")
-        || stderr.contains("CURRENTLY BROKEN")
-    {
-        "Instagram and Facebook downloads are currently not supported.".to_string()
-    } else if stderr.contains("not made this video available in your country")
-        || stderr.contains("not available in your country") {
-        // ← ADD THIS
-        "This video is geo-restricted and cannot be downloaded from our servers.".to_string()
-    } else if stderr.contains("Sign in to confirm") {
-        "YouTube verification required. Please try again in a few minutes.".to_string()
-    } else {
-        format!("yt-dlp failed: {}", stderr)
-    };
-    j.status = JobStatus::Failed;
-    j.error = Some(error_msg);
                 let stdout = String::from_utf8_lossy(&output.stdout);
 
                 let printed_path = stdout
@@ -492,7 +456,6 @@ if is_twitter && std::path::Path::new("/app/twitter-cookies.txt").exists() {
                 }
 
                 if let Some(file_path) = final_file {
-                    // Trimming with ffmpeg
                     let need_trim = start_time.is_some() || end_time.is_some();
 
                     if need_trim {
@@ -539,8 +502,6 @@ if is_twitter && std::path::Path::new("/app/twitter-cookies.txt").exists() {
                     .execute(&db)
                     .await;
 
-                    
-
                 } else {
                     j.status = JobStatus::Failed;
                     j.error = Some("Output file not found after download".into());
@@ -555,15 +516,27 @@ if is_twitter && std::path::Path::new("/app/twitter-cookies.txt").exists() {
                 }
             }
 
+            // ✅ CHANGE 2 — failure arm now has complete error detection
             Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
+                let stderr = String::from_utf8_lossy(&output.stderr).to_string();
                 let error_msg = if stderr.contains("No module named expat")
                     || stderr.contains("CURRENTLY BROKEN")
                 {
-                    "Instagram downloads are currently not supported. Try YouTube, Vimeo, TikTok or other supported sites.".to_string()
+                    "Instagram and Facebook downloads are currently not supported. Try YouTube, Vimeo, TikTok or other supported sites.".to_string()
+                } else if stderr.contains("not made this video available in your country")
+                    || stderr.contains("not available in your country")
+                {
+                    "This video is geo-restricted and cannot be downloaded from our servers.".to_string()
+                } else if stderr.contains("Sign in to confirm") {
+                    "YouTube verification required. Please try again in a few minutes.".to_string()
+                } else if stderr.contains("Bad guest token")
+                    || stderr.contains("Error(s) while querying API")
+                {
+                    "Twitter/X downloads are currently unavailable. Please try again later.".to_string()
                 } else {
                     format!("yt-dlp failed: {}", stderr)
                 };
+
                 j.status = JobStatus::Failed;
                 j.error = Some(error_msg.clone());
 
@@ -594,6 +567,7 @@ if is_twitter && std::path::Path::new("/app/twitter-cookies.txt").exists() {
 
     Ok(Json(DownloadResponse { job_id }))
 }
+
 async fn job_status(
     State(state): State<Arc<AppState>>,
     Path(job_id): Path<String>,

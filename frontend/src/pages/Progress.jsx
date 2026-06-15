@@ -75,7 +75,9 @@ export default function Progress() {
         const data = await res.json();
         setStatus(data.status);
         setProgress(data.progress);
-        if (data.error) setError(data.error);
+        if (data.error) 
+          console.error('Download error:', data.error);
+          setError(data.error);
         if (data.status === 'done' || data.status === 'failed') {
             posthog.capture('download_completed', {
     format,
