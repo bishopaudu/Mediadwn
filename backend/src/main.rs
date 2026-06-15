@@ -167,41 +167,24 @@ async fn analyze(
     }
     
     let mut cmd = tokio::process::Command::new("yt-dlp");
-if std::path::Path::new("/app/cookies.txt").exists() {
+    let is_twitter = url.contains("twitter.com") || url.contains("x.com");
+let is_youtube = url.contains("youtube.com") || url.contains("youtu.be");
+
+if is_twitter && std::path::Path::new("/app/twitter-cookies.txt").exists() {
+    cmd.args(["--cookies", "/app/twitter-cookies.txt"]);
+} else if std::path::Path::new("/app/cookies.txt").exists() {
     cmd.args(["--cookies", "/app/cookies.txt"]);
 }
+//if std::path::Path::new("/app/cookies.txt").exists() {
+  //  cmd.args(["--cookies", "/app/cookies.txt"]);
+//}
 cmd.args(["-J", "--flat-playlist", &url]);
 
 let output = cmd
     .output()
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    /*if !output.status.success() {
-    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-        eprintln!("yt-dlp stderr: {}", stderr);
-
-    let user_message = if stderr.contains("No module named expat") {
-        "Instagram and Facebook downloads are currently unavailable due to a known issue. Please try YouTube, Twitter, TikTok, or other supported sites.".to_string()
-    } else if stderr.contains("This video is not available") {
-        "This video is not available or has been removed.".to_string()
-    } else if stderr.contains("Private video") {
-        "This video is private and cannot be downloaded.".to_string()
-    } else if stderr.contains("Sign in to confirm your age") {
-        "This video requires age verification and cannot be downloaded.".to_string()
-    } else if stderr.contains("Premieres in") {
-        "This video has not premiered yet. Please try again later.".to_string()
-    } else if stderr.contains("This live event will begin in") 
-        || stderr.contains("is not currently available") {
-        "This live stream has not started yet.".to_string()
-    } else if stderr.contains("Unable to extract") 
-        || stderr.contains("Unsupported URL") {
-        "This URL is not supported. Please try a different video link.".to_string()
-    } else {
-        "Failed to analyze this URL. Please check the link and try again.".to_string()
-    };
-    
-    return Err((StatusCode::BAD_REQUEST, user_message));
-}*/
+   
 if !output.status.success() {
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
     eprintln!("yt-dlp stderr: {}", stderr);
@@ -390,9 +373,16 @@ if let Err(ref e) = insert_result {
         cmd.arg("--no-simulate");
         cmd.arg("--print").arg("after_move:filepath");
 
-        if std::path::Path::new("/app/cookies.txt").exists() {
-            cmd.args(["--cookies", "/app/cookies.txt"]);
-        }
+        //if std::path::Path::new("/app/cookies.txt").exists() {
+          //  cmd.args(["--cookies", "/app/cookies.txt"]);
+        //}
+        let is_twitter = url.contains("twitter.com") || url.contains("x.com");
+
+if is_twitter && std::path::Path::new("/app/twitter-cookies.txt").exists() {
+    cmd.args(["--cookies", "/app/twitter-cookies.txt"]);
+} else if std::path::Path::new("/app/cookies.txt").exists() {
+    cmd.args(["--cookies", "/app/cookies.txt"]);
+}
 
         match format.as_str() {
             "mp3" => {
@@ -846,6 +836,10 @@ async fn main() {
         tokio::fs::write("/app/cookies.txt", cookies).await.ok();
         println!("YouTube cookies loaded");
     }
+    if let Ok(cookies) = std::env::var("TWITTER_COOKIES") {
+    tokio::fs::write("/app/twitter-cookies.txt", cookies).await.ok();
+    println!("Twitter cookies loaded");
+}
     ensure_output_dir().await;
       let database_url =
         std::env::var("DATABASE_URL")
