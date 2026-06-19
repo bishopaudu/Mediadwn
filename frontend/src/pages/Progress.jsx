@@ -342,7 +342,8 @@ export default function Progress() {
                 <div className="flex items-start gap-2 px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl animate-shake">
                   <span className="text-red-500 text-xs mt-0.5">⚠</span>
                   <p className="text-sm text-red-600 dark:text-red-400">
-                    Oops! Something went wrong. Please try again later.
+                    
+                    {error.some(f => f.includes('quality')) ? 'Oops! Try selecting a different video quality.' : 'Oops! Something went wrong. Please try again.'}
                   </p>
                 </div>
                 <button
