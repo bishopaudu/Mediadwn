@@ -75,9 +75,10 @@ export default function Progress() {
         const data = await res.json();
         setStatus(data.status);
         setProgress(data.progress);
-        if (data.error) 
+        if (data.error) {
           console.error('Download error:', data.error);
           setError(data.error);
+        }
         if (data.status === 'done' || data.status === 'failed') {
             posthog.capture('download_completed', {
     format,
@@ -343,7 +344,7 @@ export default function Progress() {
                   <span className="text-red-500 text-xs mt-0.5">⚠</span>
                   <p className="text-sm text-red-600 dark:text-red-400">
                     
-                    {error.some(f => f.includes('quality')) ? 'Oops! Try selecting a different video quality.' : 'Oops! Something went wrong. Please try again.'}
+                    {error?.includes('quality') ? 'Oops! Try selecting a different video quality.' : 'Oops! Something went wrong. Please try again.'}
                   </p>
                 </div>
                 <button
