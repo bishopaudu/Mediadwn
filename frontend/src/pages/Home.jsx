@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, ArrowRight, Film, Music, Zap, Shield, BookOpen, Sparkles, ChevronDown } from 'lucide-react';
+import { Search, Loader2, ArrowRight, Film, Music, Zap, Shield, Sparkles, ChevronDown, X } from 'lucide-react';
 import API_BASE from '../config';
 import InfoModal from '../components/InfoModal';
 import posthog from 'posthog-js';
@@ -296,8 +296,18 @@ export default function Home() {
                   onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
                   onFocus={() => setFocused(true)}
                   onBlur={() => setFocused(false)}
-                  className="w-full pl-12 pr-4 py-4 bg-white/80 dark:bg-gray-900/60 border border-slate-200 dark:border-gray-700/50 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-transparent transition-all duration-200 text-sm"
+                  className={`w-full pl-12 ${url ? 'pr-12' : 'pr-4'} py-4 bg-white/80 dark:bg-gray-900/60 border border-slate-200 dark:border-gray-700/50 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-transparent transition-all duration-200 text-sm`}
                 />
+                {url && (
+                  <button
+                    type="button"
+                    onClick={() => setUrl('')}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 transition-colors duration-200 cursor-pointer"
+                    aria-label="Clear input"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
               </div>
 
               {/* Error */}

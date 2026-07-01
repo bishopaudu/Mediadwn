@@ -97,6 +97,13 @@ struct StatusResponse {
     error: Option<String>,
 }
 
+#[derive(Serialize)]
+struct HealthResponse {
+    status: String,
+    database: String,
+    version: String,
+}
+
 /*#[derive(Deserialize)]
 struct ShareRequest {
     job_id: String,
@@ -834,12 +841,17 @@ async fn serve_share(
 
 async fn health(
     State(state): State<Arc<AppState>>,
-) -> Result<StatusCode, StatusCode> {
+) -> Result<Json<HealthResponse>, StatusCode> {
     sqlx::query("SELECT 1")
         .execute(&state.db)
         .await
         .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
-    Ok(StatusCode::OK)
+
+    Ok(Json(HealthResponse {
+        status: "ok".to_string(),
+        database: "connected".to_string(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+    }))
 }
 
 
