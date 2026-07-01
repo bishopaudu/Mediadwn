@@ -832,6 +832,10 @@ async fn serve_share(
     Ok((headers, data))
 }*/
 
+async fn health_check() -> StatusCode {
+    StatusCode::OK
+}
+
 
 #[tokio::main]
 async fn main() {
@@ -926,6 +930,7 @@ tokio::spawn(async {
         .route("/download", post(download))
         .route("/status/:job_id", get(job_status))
         .route("/file/:job_id", get(download_file))
+        .route("/health", get(health_check))
        // .route("/share", post(create_share))
       //  .route("/share/:token", get(serve_share))
         .layer(CorsLayer::permissive())
