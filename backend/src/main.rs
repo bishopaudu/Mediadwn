@@ -1,6 +1,6 @@
 use axum::{
     extract::{Path, State},
-    http::{header, HeaderMap, StatusCode},
+    http::{header,StatusCode},
     response::{IntoResponse, Json},
     routing::{get, post},
     Router,
@@ -15,7 +15,6 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
-use rand::Rng;
 use dotenvy::dotenv;
 
 #[derive(Clone, Debug, Serialize)]
@@ -153,14 +152,6 @@ fn sanitize_filename(s: &str) -> String {
         .collect()
 }
 
-fn extract_user_id(headers: &HeaderMap) -> Result<String, StatusCode> {
-    headers
-        .get("X-User-ID")
-        .and_then(|v| v.to_str().ok())
-        .map(|s| s.to_string())
-        .filter(|s| !s.is_empty())
-        .ok_or(StatusCode::UNAUTHORIZED)
-}
 
 // ---------- Route handlers ----------
 
@@ -549,7 +540,6 @@ async fn download(
                 }
             }
 
-            // ✅ CHANGE 2 — failure arm now has complete error detection
             Ok(output) => {
                 let stderr = String::from_utf8_lossy(&output.stderr).to_string();
                 let error_msg = if stderr.contains("No module named expat")
